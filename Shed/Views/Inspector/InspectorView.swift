@@ -13,13 +13,14 @@ struct InspectorView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 20) {
                 fileSection
                 playbackSection
                 loopSection
             }
-            .padding(20)
+            .padding(18)
         }
+        .background(Color(nsColor: .windowBackgroundColor))
     }
 
     // MARK: - File
@@ -40,7 +41,7 @@ struct InspectorView: View {
                 InspectorRow(label: "Semitones", value: signed(viewModel.semitones))
             }
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 7) {
                 InspectorRow(label: "Cents", value: signed(viewModel.cents))
                 Slider(value: centsBinding, in: -100...100, step: 1)
             }
@@ -56,13 +57,15 @@ struct InspectorView: View {
             InspectorRow(label: "Length", value: loopValue(viewModel.loopRegion?.duration))
 
             Toggle("Loop Enabled", isOn: loopBinding)
+                .toggleStyle(.switch)
                 .padding(.top, 2)
 
             Button("Clear Loop") { viewModel.clearLoop() }
                 .buttonStyle(.bordered)
+                .controlSize(.large)
                 .frame(maxWidth: .infinity)
                 .disabled(viewModel.loopRegion == nil)
-                .padding(.top, 2)
+                .padding(.top, 4)
         }
     }
 
@@ -91,7 +94,7 @@ struct InspectorView: View {
     }
 }
 
-/// A lightweight inspector section: small uppercase-ish header over its rows.
+/// An inspector group: a quiet header above a rounded card holding its rows.
 struct InspectorSection<Content: View>: View {
     let title: String
     @ViewBuilder let content: Content
@@ -102,10 +105,25 @@ struct InspectorSection<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             Text(title)
-                .font(.headline)
-            content
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .padding(.leading, 4)
+
+            VStack(alignment: .leading, spacing: 11) {
+                content
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color(nsColor: .textBackgroundColor))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .strokeBorder(Color(nsColor: .separatorColor).opacity(0.5), lineWidth: 0.5)
+            )
         }
     }
 }

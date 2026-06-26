@@ -20,15 +20,15 @@ struct WaveformPane: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 TimeRulerView(viewport: viewport, duration: viewModel.duration)
-                    .frame(height: 14)
+                    .frame(height: 12)
 
                 OverviewWaveformView(waveform: waveform, viewport: $viewport, duration: viewModel.duration)
-                    .frame(height: 44)
+                    .frame(height: 64)
             }
         }
-        .padding(.horizontal, 28)
-        .padding(.top, 24)
-        .padding(.bottom, 20)
+        .padding(.horizontal, 24)
+        .padding(.top, 20)
+        .padding(.bottom, 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

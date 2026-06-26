@@ -50,10 +50,11 @@ struct TransportBar: View {
                     .font(.system(size: 20, weight: .bold))
                     .foregroundStyle(.white)
                     .offset(x: viewModel.isPlaying ? 0 : 1)
+                    .contentTransition(.symbolEffect(.replace))
             }
             .frame(width: 50, height: 50)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(HoverButtonStyle(hoverScale: 1.06, pressedScale: 0.94))
         .help(viewModel.isPlaying ? "Pause (Space)" : "Play (Space)")
     }
 
@@ -63,7 +64,7 @@ struct TransportBar: View {
                 .font(.system(size: 19, weight: .medium))
                 .foregroundStyle(.secondary)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(HoverButtonStyle())
         .help(help)
     }
 
@@ -100,9 +101,12 @@ struct TransportBar: View {
 
     private func stepperButton(_ symbol: String, help: String, enabled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 11, weight: .bold))
+            Image(systemName: symbol)
+                .font(.system(size: 11, weight: .bold))
+                .frame(width: 16, height: 16)
+                .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(HoverButtonStyle(hoverScale: 1.18))
         .disabled(!enabled)
         .help(help)
     }

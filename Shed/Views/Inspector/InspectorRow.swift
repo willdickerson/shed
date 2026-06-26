@@ -16,9 +16,11 @@ struct InspectorRow: View {
                 .foregroundStyle(.secondary)
             Spacer(minLength: 12)
             Text(value)
+                .fontWeight(.medium)
+                .monospacedDigit()
                 .multilineTextAlignment(.trailing)
                 .textSelection(.enabled)
         }
-        .font(.callout)
+        .font(.subheadline)
     }
 }

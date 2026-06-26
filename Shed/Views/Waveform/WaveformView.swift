@@ -7,6 +7,7 @@
 //  and the loop can fade in. Coordinates map through the current Viewport.
 //
 
+import AppKit
 import SwiftUI
 
 struct WaveformView: View {
@@ -17,8 +18,9 @@ struct WaveformView: View {
 
     @State private var dragMode: DragMode?
     @State private var previewLoop: LoopRegion?
+    @State private var hoveredHandle: HandleSide?
 
-    private let handleHitWidth: CGFloat = 9
+    private let handleHitWidth: CGFloat = 10
     private let topInset: CGFloat = 24
 
     private enum DragMode: Equatable {
@@ -26,6 +28,8 @@ struct WaveformView: View {
         case moveStart
         case moveEnd
     }
+
+    private enum HandleSide: Equatable { case start, end }
 
     var body: some View {
         GeometryReader { geometry in
@@ -51,6 +55,10 @@ struct WaveformView: View {
             .contentShape(Rectangle())
             .gesture(dragGesture(size: size, total: total,
                                  visibleStart: visibleStart, visibleDuration: visibleDuration))
+            .onContinuousHover { phase in
+                updateHover(phase, width: size.width,
+                            visibleStart: visibleStart, visibleDuration: visibleDuration)
+            }
             .animation(.easeInOut(duration: 0.2), value: viewModel.loopRegion)
             .onChange(of: viewport.zoom) { _, _ in
                 viewport.center(on: viewModel.currentTime, total: total)
@@ -94,7 +102,8 @@ struct WaveformView: View {
             path.move(to: CGPoint(x: x, y: topY))
             path.addLine(to: CGPoint(x: x, y: bottomY))
         }
-        context.stroke(path, with: .color(Color(nsColor: .tertiaryLabelColor)), lineWidth: 1)
+        // Higher-contrast fill so the waveform reads as the focal point.
+        context.stroke(path, with: .color(Color(nsColor: .secondaryLabelColor)), lineWidth: 1)
 
         var baseline = Path()
         baseline.move(to: CGPoint(x: 0, y: mid))
@@ -114,23 +123,23 @@ struct WaveformView: View {
         let bodyHeight = size.height - topInset
 
         return ZStack(alignment: .topLeading) {
-            RoundedRectangle(cornerRadius: 4)
-                .fill(Color.blue.opacity(0.14))
+            RoundedRectangle(cornerRadius: 7)
+                .fill(Color.blue.opacity(0.13))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 4)
+                    RoundedRectangle(cornerRadius: 7)
                         .strokeBorder(Color.blue.opacity(0.5), lineWidth: 1)
                 )
                 .frame(width: max(1, endX - startX), height: bodyHeight)
                 .position(x: (startX + endX) / 2, y: topInset + bodyHeight / 2)
 
             if rawStart >= 0, rawStart <= width {
-                loopHandle(height: bodyHeight)
+                loopHandle(height: bodyHeight, highlighted: hoveredHandle == .start || dragMode == .moveStart)
                     .position(x: startX, y: topInset + bodyHeight / 2)
                 TimeTag(text: TimeFormatting.precise(loop.start), color: .blue)
                     .position(x: startX, y: topInset / 2)
             }
             if rawEnd >= 0, rawEnd <= width {
-                loopHandle(height: bodyHeight)
+                loopHandle(height: bodyHeight, highlighted: hoveredHandle == .end || dragMode == .moveEnd)
                     .position(x: endX, y: topInset + bodyHeight / 2)
                 TimeTag(text: TimeFormatting.precise(loop.end), color: .blue)
                     .position(x: endX, y: topInset / 2)
@@ -139,17 +148,22 @@ struct WaveformView: View {
         .transition(.opacity)
     }
 
-    private func loopHandle(height: CGFloat) -> some View {
-        Capsule()
+    private func loopHandle(height: CGFloat, highlighted: Bool) -> some View {
+        let width: CGFloat = highlighted ? 8 : 5
+        return RoundedRectangle(cornerRadius: width / 2)
             .fill(Color.blue)
-            .frame(width: 5, height: height)
+            .frame(width: width, height: height)
             .overlay(
-                VStack(spacing: 2) {
-                    Capsule().frame(width: 1, height: 7)
-                    Capsule().frame(width: 1, height: 7)
+                VStack(spacing: 2.5) {
+                    ForEach(0..<2, id: \.self) { _ in
+                        Capsule().frame(width: 1.5, height: 8)
+                    }
                 }
-                .foregroundStyle(.white.opacity(0.85))
+                .foregroundStyle(.white.opacity(0.9))
+                .opacity(highlighted ? 1 : 0.75)
             )
+            .shadow(color: .black.opacity(highlighted ? 0.18 : 0), radius: 3, y: 0)
+            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: highlighted)
     }
 
     @ViewBuilder
@@ -166,7 +180,8 @@ struct WaveformView: View {
                 TimeTag(text: TimeFormatting.precise(viewModel.currentTime), color: .red)
                     .position(x: px, y: topInset / 2)
             }
-            .animation(.linear(duration: 0.03), value: viewModel.currentTime)
+            // Slight overlap between samples keeps motion continuous.
+            .animation(.linear(duration: 0.05), value: viewModel.currentTime)
         }
     }
 
@@ -182,6 +197,26 @@ struct WaveformView: View {
                       visibleStart: TimeInterval, visibleDuration: TimeInterval) -> TimeInterval {
         let fraction = max(0, min(1, x / max(width, 1)))
         return visibleStart + Double(fraction) * visibleDuration
+    }
+
+    /// Highlights a loop handle and shows a resize cursor when the pointer is
+    /// near it, making the handles feel grabbable.
+    private func updateHover(_ phase: HoverPhase, width: CGFloat,
+                             visibleStart: TimeInterval, visibleDuration: TimeInterval) {
+        guard case let .active(location) = phase,
+              let loop = viewModel.loopRegion, loop.isUsable else {
+            if hoveredHandle != nil { hoveredHandle = nil }
+            if dragMode == nil { NSCursor.arrow.set() }
+            return
+        }
+
+        let startX = x(for: loop.start, width: width, visibleStart: visibleStart, visibleDuration: visibleDuration)
+        let endX = x(for: loop.end, width: width, visibleStart: visibleStart, visibleDuration: visibleDuration)
+        let side: HandleSide? = abs(location.x - startX) <= handleHitWidth ? .start
+            : (abs(location.x - endX) <= handleHitWidth ? .end : nil)
+
+        if side != hoveredHandle { hoveredHandle = side }
+        if side != nil { NSCursor.resizeLeftRight.set() } else { NSCursor.arrow.set() }
     }
 
     private func followPlayhead(_ time: TimeInterval, total: TimeInterval) {

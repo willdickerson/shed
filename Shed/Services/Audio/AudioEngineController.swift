@@ -310,7 +310,7 @@ final class AudioEngineController {
         stopDisplayLoop()
         displayTask = Task { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(for: .milliseconds(30))
+                try? await Task.sleep(for: .milliseconds(16)) // ~60 fps for a smooth playhead
                 self?.tick()
             }
         }

@@ -26,11 +26,11 @@ struct TimeRulerView: View {
                 ForEach(ticks(from: first, step: step, end: visibleStart + visibleDuration), id: \.self) { tick in
                     let x = CGFloat((tick - visibleStart) / visibleDuration) * width
                     Text(TimeFormatting.clock(tick))
-                        .font(.caption2)
+                        .font(.system(size: 9, weight: .regular))
                         .monospacedDigit()
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.tertiary)
                         .fixedSize()
-                        .position(x: x, y: 7)
+                        .position(x: x, y: 6)
                 }
             }
         }

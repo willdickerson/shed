@@ -17,7 +17,7 @@ struct ImportMenu: View {
             Button("Open File…", systemImage: "folder", action: onOpenFile)
             Button("Import from YouTube…", systemImage: "play.rectangle", action: onYouTube)
         } label: {
-            Label("Import", systemImage: "plus")
+            Label("Import", systemImage: "square.and.arrow.down")
         }
         .modifier(StyleModifier(prominent: prominent))
     }
@@ -32,7 +32,10 @@ struct ImportMenu: View {
                     .controlSize(.large)
                     .menuIndicator(.hidden)
             } else {
-                content.menuStyle(.automatic)
+                content
+                    .menuStyle(.button)
+                    .buttonStyle(.bordered)
+                    .fixedSize()
             }
         }
     }
