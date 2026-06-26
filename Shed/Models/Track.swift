@@ -1,0 +1,31 @@
+//
+//  Track.swift
+//  Shed
+//
+
+import Foundation
+
+/// A loaded, playable track. `workingURL` always points at a decoded WAV file
+/// inside Shed's working directory, so the rest of the app never has to worry
+/// about the original container format.
+nonisolated struct Track: Identifiable, Equatable, Sendable {
+    let id: UUID
+    let displayName: String
+    let source: TrackSource
+    let workingURL: URL
+    let duration: TimeInterval
+
+    init(
+        id: UUID = UUID(),
+        displayName: String,
+        source: TrackSource,
+        workingURL: URL,
+        duration: TimeInterval
+    ) {
+        self.id = id
+        self.displayName = displayName
+        self.source = source
+        self.workingURL = workingURL
+        self.duration = duration
+    }
+}
