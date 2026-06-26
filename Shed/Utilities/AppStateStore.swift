@@ -12,6 +12,8 @@ nonisolated struct PersistedState: Codable, Sendable {
     var workingPath: String?
     var displayName: String?
     var source: TrackSource?
+    /// Optional so older persisted blobs (without this key) still decode.
+    var format: String?
     var youTubeURLString: String
     var speed: Double
     var semitones: Int
@@ -23,6 +25,7 @@ nonisolated struct PersistedState: Codable, Sendable {
         workingPath: nil,
         displayName: nil,
         source: nil,
+        format: nil,
         youTubeURLString: "",
         speed: 1.0,
         semitones: 0,

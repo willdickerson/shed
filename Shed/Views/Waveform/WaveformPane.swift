@@ -2,25 +2,33 @@
 //  WaveformPane.swift
 //  Shed
 //
-//  Switches between the empty state and the live waveform.
+//  Stacks the main waveform, the time ruler, and the overview strip.
 //
 
 import SwiftUI
 
 struct WaveformPane: View {
     @Bindable var viewModel: WorkspaceViewModel
+    @Binding var viewport: Viewport
     let onInteract: () -> Void
 
     var body: some View {
-        Group {
-            if let waveform = viewModel.waveform, viewModel.hasTrack {
-                WaveformView(viewModel: viewModel, waveform: waveform, onInteract: onInteract)
-                    .padding(16)
-            } else {
-                EmptyStateView()
+        VStack(spacing: 12) {
+            if let waveform = viewModel.waveform {
+                WaveformView(viewModel: viewModel, waveform: waveform,
+                             viewport: $viewport, onInteract: onInteract)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                TimeRulerView(viewport: viewport, duration: viewModel.duration)
+                    .frame(height: 14)
+
+                OverviewWaveformView(waveform: waveform, viewport: $viewport, duration: viewModel.duration)
+                    .frame(height: 44)
             }
         }
+        .padding(.horizontal, 28)
+        .padding(.top, 24)
+        .padding(.bottom, 20)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(nsColor: .textBackgroundColor))
     }
 }

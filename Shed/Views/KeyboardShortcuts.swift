@@ -33,6 +33,10 @@ struct KeyboardShortcuts: ViewModifier {
                 viewModel.setLoopStartAtPlayhead(); return .handled
             case "]":
                 viewModel.setLoopEndAtPlayhead(); return .handled
+            case "-", "_":
+                viewModel.decreaseSpeed(); return .handled
+            case "=", "+":
+                viewModel.increaseSpeed(); return .handled
             default:
                 return .ignored
             }

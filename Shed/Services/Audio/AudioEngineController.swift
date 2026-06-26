@@ -39,6 +39,7 @@ final class AudioEngineController {
 
     private var rate: Float = 1.0
     private var pitchCents: Float = 0
+    private var volume: Float = 1.0
 
     // MARK: Loop
 
@@ -93,6 +94,7 @@ final class AudioEngineController {
         engine.connect(player, to: timePitch, format: format)
         engine.connect(timePitch, to: engine.mainMixerNode, format: format)
         engine.prepare()
+        engine.mainMixerNode.outputVolume = volume
 
         currentTime = 0
         isPlaying = false
@@ -187,6 +189,11 @@ final class AudioEngineController {
     func setPitch(cents: Int) {
         pitchCents = Float(cents)
         timePitch.pitch = pitchCents
+    }
+
+    func setVolume(_ value: Double) {
+        volume = Float(min(1, max(0, value)))
+        engine.mainMixerNode.outputVolume = volume
     }
 
     func setLoop(_ region: LoopRegion?) {

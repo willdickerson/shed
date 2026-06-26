@@ -66,9 +66,10 @@ nonisolated struct YouTubeImporter {
         try await converter.convertToWAV(input: downloaded, output: wav)
         try? FileManager.default.removeItem(at: downloaded) // tidy up the source
 
+        let format = downloaded.pathExtension.uppercased()
         let duration = try LocalFileImporter.duration(of: wav)
         let title = Self.title(from: downloaded, token: token)
-        return Track(displayName: title, source: .youTube, workingURL: wav, duration: duration)
+        return Track(displayName: title, source: .youTube, workingURL: wav, duration: duration, format: format)
     }
 
     // MARK: - Helpers

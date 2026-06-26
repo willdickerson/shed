@@ -37,6 +37,7 @@ final class WorkspaceViewModel {
     private(set) var speed: Double = 1.0
     private(set) var semitones: Int = 0
     private(set) var cents: Int = 0
+    private(set) var volume: Double = 1.0
     private(set) var loopRegion: LoopRegion?
     private(set) var loopEnabled: Bool = false
 
@@ -71,6 +72,16 @@ final class WorkspaceViewModel {
     var isPlaying: Bool { audio.isPlaying }
     var totalPitchCents: Int { semitones * 100 + cents }
     var isImporting: Bool { importStatus.isBusy }
+    var speedPercent: String { "\(Int((speed * 100).rounded()))%" }
+
+    /// "YouTube • MP3 • 3:35" for the titlebar subtitle.
+    var trackSubtitle: String {
+        guard let track else { return "" }
+        var parts = [track.source.displayName]
+        if !track.format.isEmpty { parts.append(track.format) }
+        parts.append(TimeFormatting.clock(track.duration))
+        return parts.joined(separator: " • ")
+    }
 
     // MARK: - Import
 
@@ -155,6 +166,24 @@ final class WorkspaceViewModel {
         speed = value
         audio.setSpeed(value)
         persist()
+    }
+
+    /// Steps to the next slower preset speed (bound to the `-` key).
+    func decreaseSpeed() {
+        guard let index = Self.speedOptions.firstIndex(of: speed), index > 0 else { return }
+        setSpeed(Self.speedOptions[index - 1])
+    }
+
+    /// Steps to the next faster preset speed (bound to the `=` key).
+    func increaseSpeed() {
+        guard let index = Self.speedOptions.firstIndex(of: speed),
+              index < Self.speedOptions.count - 1 else { return }
+        setSpeed(Self.speedOptions[index + 1])
+    }
+
+    func setVolume(_ value: Double) {
+        volume = value
+        audio.setVolume(value)
     }
 
     func setSemitones(_ value: Int) {
@@ -263,6 +292,7 @@ final class WorkspaceViewModel {
 
         audio.setSpeed(speed)
         audio.setPitch(cents: totalPitchCents)
+        audio.setVolume(volume)
 
         // Re-open the last track if its working WAV still exists.
         guard
@@ -277,7 +307,13 @@ final class WorkspaceViewModel {
             guard let self else { return }
             do {
                 let duration = try LocalFileImporter.duration(of: url)
-                let restored = Track(displayName: name, source: source, workingURL: url, duration: duration)
+                let restored = Track(
+                    displayName: name,
+                    source: source,
+                    workingURL: url,
+                    duration: duration,
+                    format: state.format ?? ""
+                )
                 try await self.finishLoading(restored)
             } catch {
                 // A failed restore is non-fatal; just start with an empty state.
@@ -291,6 +327,7 @@ final class WorkspaceViewModel {
             workingPath: track?.workingURL.path,
             displayName: track?.displayName,
             source: track?.source,
+            format: track?.format,
             youTubeURLString: youTubeURLString,
             speed: speed,
             semitones: semitones,

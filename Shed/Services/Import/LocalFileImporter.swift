@@ -45,7 +45,8 @@ nonisolated struct LocalFileImporter {
             displayName: name,
             source: .localFile,
             workingURL: destination,
-            duration: duration
+            duration: duration,
+            format: ext.uppercased()
         )
     }
 

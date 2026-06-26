@@ -2,7 +2,8 @@
 //  InspectorView.swift
 //  Shed
 //
-//  Right-hand panel: track metadata plus speed, pitch, and loop controls.
+//  Calm, low-chrome inspector: File, Playback (pitch), Loop. Speed lives in the
+//  transport bar since it's adjusted constantly.
 //
 
 import SwiftUI
@@ -11,52 +12,36 @@ struct InspectorView: View {
     @Bindable var viewModel: WorkspaceViewModel
 
     var body: some View {
-        Form {
-            trackSection
-            playbackSection
-            loopSection
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                fileSection
+                playbackSection
+                loopSection
+            }
+            .padding(20)
         }
-        .formStyle(.grouped)
-        .frame(maxHeight: .infinity)
     }
 
-    // MARK: - Track
+    // MARK: - File
 
-    private var trackSection: some View {
-        Section("Track") {
-            InspectorRow(label: "File", value: viewModel.track?.displayName ?? "—")
+    private var fileSection: some View {
+        InspectorSection("File") {
+            InspectorRow(label: "Name", value: viewModel.track?.displayName ?? "—")
             InspectorRow(label: "Source", value: viewModel.track?.source.displayName ?? "—")
             InspectorRow(label: "Duration", value: TimeFormatting.clock(viewModel.duration))
-            InspectorRow(label: "Position", value: TimeFormatting.clock(viewModel.currentTime))
-            InspectorRow(label: "Status", value: statusText)
         }
-    }
-
-    private var statusText: String {
-        viewModel.importStatus == .idle ? "—" : viewModel.importStatus.label
     }
 
     // MARK: - Playback
 
     private var playbackSection: some View {
-        Section("Playback") {
-            Picker("Speed", selection: speedBinding) {
-                ForEach(WorkspaceViewModel.speedOptions, id: \.self) { option in
-                    Text("\(Int(option * 100))%").tag(option)
-                }
-            }
-
+        InspectorSection("Playback") {
             Stepper(value: semitoneBinding, in: -12...12) {
                 InspectorRow(label: "Semitones", value: signed(viewModel.semitones))
             }
 
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text("Cents").foregroundStyle(.secondary)
-                    Spacer()
-                    Text(signed(viewModel.cents))
-                }
-                .font(.callout)
+            VStack(alignment: .leading, spacing: 6) {
+                InspectorRow(label: "Cents", value: signed(viewModel.cents))
                 Slider(value: centsBinding, in: -100...100, step: 1)
             }
         }
@@ -65,26 +50,23 @@ struct InspectorView: View {
     // MARK: - Loop
 
     private var loopSection: some View {
-        Section("Loop") {
+        InspectorSection("Loop") {
             InspectorRow(label: "Start", value: loopValue(viewModel.loopRegion?.start))
             InspectorRow(label: "End", value: loopValue(viewModel.loopRegion?.end))
+            InspectorRow(label: "Length", value: loopValue(viewModel.loopRegion?.duration))
 
             Toggle("Loop Enabled", isOn: loopBinding)
+                .padding(.top, 2)
 
-            Button(role: .destructive) {
-                viewModel.clearLoop()
-            } label: {
-                Text("Clear Loop")
-            }
-            .disabled(viewModel.loopRegion == nil)
+            Button("Clear Loop") { viewModel.clearLoop() }
+                .buttonStyle(.bordered)
+                .frame(maxWidth: .infinity)
+                .disabled(viewModel.loopRegion == nil)
+                .padding(.top, 2)
         }
     }
 
     // MARK: - Bindings & formatting
-
-    private var speedBinding: Binding<Double> {
-        Binding(get: { viewModel.speed }, set: { viewModel.setSpeed($0) })
-    }
 
     private var semitoneBinding: Binding<Int> {
         Binding(get: { viewModel.semitones }, set: { viewModel.setSemitones($0) })
@@ -97,18 +79,33 @@ struct InspectorView: View {
     private var loopBinding: Binding<Bool> {
         Binding(
             get: { viewModel.loopEnabled },
-            set: { newValue in
-                if newValue != viewModel.loopEnabled { viewModel.toggleLoop() }
-            }
+            set: { newValue in if newValue != viewModel.loopEnabled { viewModel.toggleLoop() } }
         )
     }
 
-    private func signed(_ value: Int) -> String {
-        value > 0 ? "+\(value)" : "\(value)"
-    }
+    private func signed(_ value: Int) -> String { value > 0 ? "+\(value)" : "\(value)" }
 
     private func loopValue(_ time: TimeInterval?) -> String {
         guard let time else { return "—" }
         return TimeFormatting.precise(time)
+    }
+}
+
+/// A lightweight inspector section: small uppercase-ish header over its rows.
+struct InspectorSection<Content: View>: View {
+    let title: String
+    @ViewBuilder let content: Content
+
+    init(_ title: String, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.headline)
+            content
+        }
     }
 }

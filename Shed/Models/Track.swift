@@ -14,18 +14,22 @@ nonisolated struct Track: Identifiable, Equatable, Sendable {
     let source: TrackSource
     let workingURL: URL
     let duration: TimeInterval
+    /// Original container format for display, e.g. "MP3" (working file is WAV).
+    let format: String
 
     init(
         id: UUID = UUID(),
         displayName: String,
         source: TrackSource,
         workingURL: URL,
-        duration: TimeInterval
+        duration: TimeInterval,
+        format: String = ""
     ) {
         self.id = id
         self.displayName = displayName
         self.source = source
         self.workingURL = workingURL
         self.duration = duration
+        self.format = format
     }
 }
