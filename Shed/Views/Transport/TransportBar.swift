@@ -50,7 +50,6 @@ struct TransportBar: View {
                     .font(.system(size: 20, weight: .bold))
                     .foregroundStyle(.white)
                     .offset(x: viewModel.isPlaying ? 0 : 1)
-                    .contentTransition(.symbolEffect(.replace))
             }
             .frame(width: 50, height: 50)
         }

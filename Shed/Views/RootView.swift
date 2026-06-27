@@ -113,12 +113,9 @@ private struct ImportStatusBadge: View {
 
     var body: some View {
         switch status {
-        case .idle:
+        case .idle, .ready:
+            // Only surfaced while it's meaningful — during import or on failure.
             EmptyView()
-        case .ready:
-            Label("Ready", systemImage: "checkmark.circle.fill")
-                .foregroundStyle(.green)
-                .font(.callout)
         case .failed:
             Label("Failed", systemImage: "exclamationmark.triangle.fill")
                 .foregroundStyle(.red)

@@ -57,6 +57,11 @@ final class AudioEngineController {
     /// Loop mode: start time and length of the looping buffer.
     private var loopStartTime: TimeInterval = 0
     private var loopFrames: AVAudioFramePosition = 0
+    /// Loop mode: length of an initial one-shot "tail" played before the loop
+    /// buffer begins repeating, used to continue from the playhead when a loop
+    /// is resized mid-playback. Zero for a normal loop that starts at its head.
+    private var loopTailFrames: AVAudioFramePosition = 0
+    private var loopTailStartTime: TimeInterval = 0
 
     private var isLoopingBuffer: Bool { scheduledLoop != nil }
 
@@ -223,7 +228,14 @@ final class AudioEngineController {
         if isPlaying {
             if let loop = activeLoop {
                 if !(isLoopingBuffer && scheduledLoop == loop) {
-                    scheduleLoop(loop)
+                    // If we were already looping and the playhead still sits
+                    // inside the resized region, keep playing from here instead
+                    // of jumping back to the loop start.
+                    if isLoopingBuffer, currentTime > loop.start, currentTime < loop.end {
+                        scheduleLoop(loop, continuingFrom: currentTime)
+                    } else {
+                        scheduleLoop(loop)
+                    }
                     player.play()
                 }
             } else if isLoopingBuffer {
@@ -261,7 +273,12 @@ final class AudioEngineController {
     }
 
     /// Reads `loop` into a buffer and schedules it to repeat seamlessly.
-    private func scheduleLoop(_ loop: LoopRegion) {
+    ///
+    /// When `continuingFrom` is provided (a time strictly inside the loop),
+    /// the remainder of the region from that point is played first as a one-shot
+    /// tail, then the full region loops — so resizing a loop during playback
+    /// continues from the playhead rather than restarting at the loop start.
+    private func scheduleLoop(_ loop: LoopRegion, continuingFrom resumeTime: TimeInterval? = nil) {
         guard let file = audioFile else { return }
         let startFrame = frame(for: loop.start)
         let endFrame = frame(for: loop.end)
@@ -283,10 +300,26 @@ final class AudioEngineController {
         }
 
         player.stop()
+
+        // Optional tail: play from the playhead to the loop end before looping.
+        var tailFrames: AVAudioFramePosition = 0
+        var tailStart = loop.start
+        if let resumeTime, resumeTime > loop.start, resumeTime < loop.end {
+            let resumeFrame = frame(for: resumeTime)
+            let tail = AVAudioFrameCount(max(0, endFrame - resumeFrame))
+            if tail > 0 {
+                player.scheduleSegment(file, startingFrame: resumeFrame, frameCount: tail, at: nil)
+                tailFrames = AVAudioFramePosition(tail)
+                tailStart = Double(resumeFrame) / sampleRate
+            }
+        }
+
         scheduledLoop = loop
         loopStartTime = Double(startFrame) / sampleRate
         loopFrames = AVAudioFramePosition(length)
-        currentTime = loopStartTime
+        loopTailFrames = tailFrames
+        loopTailStartTime = tailStart
+        currentTime = tailFrames > 0 ? tailStart : loopStartTime
         player.scheduleBuffer(buffer, at: nil, options: .loops, completionHandler: nil)
         hasActiveSchedule = true
     }
@@ -299,7 +332,12 @@ final class AudioEngineController {
         else { return currentTime }
 
         if isLoopingBuffer, loopFrames > 0 {
-            var within = playerTime.sampleTime % loopFrames
+            let sampleTime = playerTime.sampleTime
+            // Still inside the one-shot tail that precedes the looping buffer.
+            if sampleTime < loopTailFrames {
+                return loopTailStartTime + Double(sampleTime) / sampleRate
+            }
+            var within = (sampleTime - loopTailFrames) % loopFrames
             if within < 0 { within += loopFrames }
             return loopStartTime + Double(within) / sampleRate
         }
