@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shed — transcription tool for musicians</title>
+<meta name="description" content="Shed is a local-only macOS app for musicians: slow audio down without changing pitch, shift pitch, and loop short phrases while you transcribe.">
+<link rel="icon" href="icon.png">
+<style>
+  :root {
+    --bg: #faf6ee;
+    --ink: #2f3134;
+    --muted: #6f7174;
+    --card: #ffffff;
+    --line: #e7e1d6;
+    --accent: #2f3134;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 17px/1.6 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 72px 24px 96px; }
+  header { text-align: center; }
+  .icon {
+    width: 116px; height: 116px;
+    filter: drop-shadow(0 10px 24px rgba(0,0,0,0.12));
+  }
+  h1 { font-size: 44px; letter-spacing: -0.02em; margin: 20px 0 6px; font-weight: 700; }
+  .tagline { font-size: 20px; color: var(--muted); margin: 0 0 8px; }
+  .blurb { max-width: 520px; margin: 14px auto 0; color: var(--ink); }
+
+  .cta { margin: 34px 0 10px; }
+  .btn {
+    display: inline-block; background: var(--accent); color: #faf6ee;
+    text-decoration: none; font-weight: 600; font-size: 17px;
+    padding: 14px 26px; border-radius: 12px;
+    transition: transform .12s ease, opacity .12s ease;
+  }
+  .btn:hover { transform: translateY(-1px); opacity: 0.92; }
+  .meta { color: var(--muted); font-size: 14px; margin-top: 12px; }
+
+  section { margin-top: 56px; }
+  h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 16px; font-weight: 600; }
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 14px; padding: 22px 24px;
+  }
+  ol { margin: 0; padding-left: 22px; }
+  ol li { margin: 8px 0; }
+  ul.bare { list-style: none; margin: 0; padding: 0; }
+  ul.bare li { margin: 7px 0; }
+  code, kbd {
+    font: 13px/1.5 ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  pre {
+    background: #f1ece2; border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px 14px; overflow-x: auto; margin: 14px 0 0;
+  }
+  kbd {
+    background: #f1ece2; border: 1px solid var(--line); border-bottom-width: 2px;
+    border-radius: 6px; padding: 1px 7px; color: var(--ink);
+  }
+  .note { color: var(--muted); font-size: 14px; margin-top: 14px; }
+  .feat { margin: 9px 0; }
+  .feat b { font-weight: 600; }
+  footer { margin-top: 64px; text-align: center; color: var(--muted); font-size: 14px; }
+  footer a { color: var(--muted); }
+  a { color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img class="icon" src="icon.png" alt="Shed app icon">
+    <h1>Shed</h1>
+    <p class="tagline">Slow it down. Loop it. Transcribe it.</p>
+    <p class="blurb">A local-only macOS app for musicians. Open an audio file or a YouTube link, slow it down without changing pitch, shift the pitch, and loop short phrases while you work them out by ear.</p>
+    <div class="cta">
+      <a class="btn" href="https://github.com/willdickerson/shed/releases/download/v1.0.0-beta.1/Shed-1.0.0-beta.1.dmg">Download for macOS</a>
+      <p class="meta">Beta 1.0.0 · macOS 15+ · Apple Silicon &amp; Intel · ~89&nbsp;MB</p>
+    </div>
+  </header>
+
+  <section>
+    <h2>Installing the beta</h2>
+    <div class="card">
+      <ol>
+        <li>Open the downloaded <strong>.dmg</strong> and drag <strong>Shed</strong> into <strong>Applications</strong>.</li>
+        <li>Double-click Shed. macOS will block it the first time — this beta isn’t notarized yet, which is expected.</li>
+        <li>Open <strong>System Settings ▸ Privacy &amp; Security</strong>, scroll to the bottom, and click <strong>Open Anyway</strong>. Confirm.</li>
+      </ol>
+      <p class="note">If opening a file or YouTube link fails afterward, run this once in Terminal, then reopen Shed:</p>
+      <pre><code>xattr -dr com.apple.quarantine /Applications/Shed.app</code></pre>
+      <p class="note">Everything runs on your Mac — no account, no servers. yt-dlp and ffmpeg are bundled, so there’s nothing else to install.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>What you can do</h2>
+    <div class="card">
+      <p class="feat"><b>Import anything</b> — local audio/video files or a YouTube URL.</p>
+      <p class="feat"><b>Slow down</b> — 50–100% speed with the pitch preserved.</p>
+      <p class="feat"><b>Shift pitch</b> — by semitones and cents, with a one-tap tuning-offset detector.</p>
+      <p class="feat"><b>Loop a phrase</b> — drag across the waveform and it loops seamlessly while you transcribe.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Keyboard</h2>
+    <div class="card">
+      <ul class="bare">
+        <li><kbd>Space</kbd> play / pause</li>
+        <li><kbd>←</kbd> / <kbd>→</kbd> back / forward 5 seconds</li>
+        <li><kbd>L</kbd> toggle loop &nbsp;·&nbsp; <kbd>Esc</kbd> clear loop</li>
+        <li><kbd>[</kbd> / <kbd>]</kbd> set loop start / end</li>
+        <li><kbd>−</kbd> / <kbd>=</kbd> slower / faster</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <p><a href="https://github.com/willdickerson/shed">Source on GitHub</a></p>
+  </footer>
+</div>
+</body>
+</html>
