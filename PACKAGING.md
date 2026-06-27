@@ -81,3 +81,18 @@ brew install --cask OWNER/tap/shed
 ```
 
 The cask declares no dependencies because the binaries are bundled.
+
+### Homebrew and Gatekeeper (un-notarized builds)
+
+Homebrew Cask **quarantines apps by default**, so a plain install of an
+un-notarized build is blocked by Gatekeeper just like a browser download. For a
+Homebrew-savvy tester, the `--no-quarantine` flag skips that entirely — the app
+launches and its bundled binaries run with no "unidentified developer" prompt:
+
+```sh
+brew install --cask --no-quarantine OWNER/tap/shed
+```
+
+This is the cleanest path *for testers who already use Homebrew*. A cask can't
+force `--no-quarantine` (Homebrew removed that), so it must be typed. For
+testers without Homebrew, notarization is still the only friction-free option.
