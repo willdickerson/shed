@@ -6,7 +6,7 @@ while you transcribe.
 
 ## Install
 
-1. Download **Shed-1.0.0-beta.1.dmg** (link below).
+1. Download **Shed-1.0.0-beta.2.dmg** (link below).
 2. Open the dmg and drag **Shed** into **Applications**.
 3. Double-click Shed. macOS will block it the first time ("Apple could not
    verify…") because this beta isn't notarized yet — this is expected.
