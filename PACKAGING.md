@@ -19,18 +19,26 @@ At runtime `BinaryLocator` searches in order:
 **bundled → `/opt/homebrew/bin` → `/usr/local/bin` → `PATH`**, and only errors
 if nothing usable is found.
 
-## 2. Build a release
+## 2. Build a universal release (arm64 + Intel)
 
-In Xcode: **Product ▸ Archive**, or:
+Use **Product ▸ Archive** in Xcode, or a **generic** destination — both produce
+a universal app (`x86_64 + arm64`) that runs on Intel and Apple Silicon:
 
 ```sh
 xcodebuild -project Shed.xcodeproj -scheme Shed -configuration Release \
-  -derivedDataPath build archive   # then export, or just use the .app under build/
+  -destination 'generic/platform=macOS' -derivedDataPath build build
+# app: build/Build/Products/Release/Shed.app
 ```
+
+> Don't build with a concrete `-destination 'platform=macOS'` (or a Debug
+> build) for distribution — those compile only the current Mac's architecture.
+> Verify with: `lipo -archs Shed.app/Contents/MacOS/Shed` → should list both.
+> The bundled helpers are already universal. Intel testers need macOS 15+
+> (Sequoia still supports 2018–2020 Intel Macs).
 
 > The bundled ffmpeg is large (~125 MB universal), so the app is ~170 MB. To
 > slim it, ship an arm64-only ffmpeg (edit `fetch-vendor-binaries.sh` to skip the
-> lipo step) — most testers are on Apple Silicon.
+> lipo step) — but that drops Intel support.
 
 ## 3. Sign & notarize (required for non-technical testers)
 
