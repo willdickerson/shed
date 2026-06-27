@@ -24,6 +24,7 @@ final class WorkspaceViewModel {
     private let localImporter: LocalFileImporter
     private let youTubeImporter: YouTubeImporter
     private let waveformGenerator: WaveformGenerator
+    private let tuningAnalyzer: TuningAnalyzer
     private let store: AppStateStore
 
     // MARK: Track / waveform
@@ -41,6 +42,7 @@ final class WorkspaceViewModel {
     private(set) var volume: Double = 1.0
     private(set) var loopRegion: LoopRegion?
     private(set) var loopEnabled: Bool = false
+    private(set) var tuningState: TuningAnalysisState = .idle
 
     // MARK: Recents
 
@@ -56,6 +58,7 @@ final class WorkspaceViewModel {
     var activeError: PresentedError?
 
     private var importTask: Task<Void, Never>?
+    private var tuningTask: Task<Void, Never>?
 
     // MARK: Init
 
@@ -64,12 +67,14 @@ final class WorkspaceViewModel {
         localImporter: LocalFileImporter = LocalFileImporter(),
         youTubeImporter: YouTubeImporter = YouTubeImporter(),
         waveformGenerator: WaveformGenerator = WaveformGenerator(),
+        tuningAnalyzer: TuningAnalyzer = TuningAnalyzer(),
         store: AppStateStore = AppStateStore()
     ) {
         self.audio = audio ?? AudioEngineController()
         self.localImporter = localImporter
         self.youTubeImporter = youTubeImporter
         self.waveformGenerator = waveformGenerator
+        self.tuningAnalyzer = tuningAnalyzer
         self.store = store
         restore()
     }
@@ -161,6 +166,8 @@ final class WorkspaceViewModel {
 
         self.track = track
         self.waveform = waveform
+        tuningTask?.cancel()
+        tuningState = .idle
         clampLoopToTrack()
         audio.setLoop(loopRegion)
         audio.setLoopEnabled(loopEnabled)
@@ -244,12 +251,14 @@ final class WorkspaceViewModel {
     func setSemitones(_ value: Int) {
         semitones = min(12, max(-12, value))
         audio.setPitch(cents: totalPitchCents)
+        collapseTuningResult()
         persist()
     }
 
     func setCents(_ value: Int) {
         cents = min(100, max(-100, value))
         audio.setPitch(cents: totalPitchCents)
+        collapseTuningResult()
         persist()
     }
 
@@ -257,10 +266,53 @@ final class WorkspaceViewModel {
         semitones = 0
         cents = 0
         audio.setPitch(cents: 0)
+        collapseTuningResult()
         persist()
     }
 
     var isPitchAdjusted: Bool { semitones != 0 || cents != 0 }
+
+    // MARK: - Tuning analysis
+
+    func findTuningOffset() {
+        guard let track, tuningState != .analyzing else { return }
+        tuningState = .analyzing
+        let url = track.workingURL
+        tuningTask?.cancel()
+        tuningTask = Task { [weak self] in
+            guard let self else { return }
+            do {
+                let estimate = try await tuningAnalyzer.analyze(url: url)
+                guard !Task.isCancelled else { return }
+                tuningState = estimate.map { .result($0) } ?? .failed
+            } catch {
+                tuningState = .failed
+            }
+        }
+    }
+
+    /// Applies the estimated correction to the Cents control, then briefly
+    /// confirms before returning to idle. Never invoked automatically.
+    func applyTuningCorrection() {
+        guard case let .result(estimate) = tuningState else { return }
+        setCents(Int((-estimate.offsetCents).rounded()))
+        tuningState = .applied
+        tuningTask?.cancel()
+        tuningTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(1))
+            guard let self, !Task.isCancelled else { return }
+            if tuningState == .applied { tuningState = .idle }
+        }
+    }
+
+    /// Collapses a presented result back to idle (used for "click elsewhere").
+    /// Leaves analysis-in-progress and the transient confirmation untouched.
+    func collapseTuningResult() {
+        switch tuningState {
+        case .result, .failed: tuningState = .idle
+        default: break
+        }
+    }
 
     // MARK: - Loop
 

@@ -77,6 +77,94 @@ struct InspectorView: View {
             .disabled(!viewModel.isPitchAdjusted)
             .frame(maxWidth: .infinity)
             .padding(.top, 2)
+
+            Divider().padding(.vertical, 2)
+
+            tuningControl
+                .animation(.easeInOut(duration: 0.22), value: viewModel.tuningState)
+        }
+    }
+
+    // MARK: - Tuning
+
+    private let inTuneThreshold = 3
+
+    @ViewBuilder
+    private var tuningControl: some View {
+        switch viewModel.tuningState {
+        case .idle:
+            Button("Detect Tuning Offset") { viewModel.findTuningOffset() }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
+                .frame(maxWidth: .infinity)
+
+        case .analyzing:
+            HStack(spacing: 8) {
+                Image(systemName: "waveform")
+                    .symbolEffect(.variableColor.iterative)
+                Text("Estimating offset…")
+            }
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 7)
+
+        case let .result(estimate):
+            resultPanel(estimate)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+
+        case .applied:
+            Label("Correction Applied", systemImage: "checkmark.circle.fill")
+                .font(.callout.weight(.medium))
+                .foregroundStyle(.green)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 7)
+                .transition(.opacity)
+
+        case .failed:
+            VStack(spacing: 4) {
+                Text("Unable to estimate tuning")
+                    .font(.callout.weight(.medium))
+                Text("This recording does not contain enough stable pitched material.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity)
+            .transition(.opacity.combined(with: .move(edge: .top)))
+        }
+    }
+
+    @ViewBuilder
+    private func resultPanel(_ estimate: TuningEstimate) -> some View {
+        let cents = Int(estimate.offsetCents.rounded())
+        let inTune = abs(cents) <= inTuneThreshold
+
+        VStack(spacing: 12) {
+            VStack(spacing: 3) {
+                Text("Estimated tuning")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text(inTune
+                     ? "Recording appears to be in tune."
+                     : "Recording is \(abs(cents)) cents \(cents < 0 ? "flat" : "sharp").")
+                    .font(.headline)
+                    .multilineTextAlignment(.center)
+                Text("Based on approximately \(estimate.detectionCount.formatted()) stable note detections.")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .multilineTextAlignment(.center)
+            }
+
+            if !inTune {
+                let correction = -cents
+                Button("Apply \(correction > 0 ? "+" : "")\(correction) cent Correction") {
+                    withAnimation(.easeInOut(duration: 0.18)) { viewModel.applyTuningCorrection() }
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .frame(maxWidth: .infinity)
+            }
         }
     }
 
