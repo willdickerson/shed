@@ -22,7 +22,7 @@
 ## Highlights
 
 - Open local audio/video files, or import from a YouTube URL
-- Slow down 50–100% with pitch preserved; shift pitch by semitones and cents
+- Slow down 30–100% with pitch preserved; shift pitch by semitones and cents
 - One-tap tuning-offset detection
 - Drag a region on the waveform and it loops seamlessly while you work it out
 

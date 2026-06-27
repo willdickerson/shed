@@ -16,7 +16,7 @@ import Observation
 final class WorkspaceViewModel {
 
     /// Selectable playback speeds (pitch preserved).
-    static let speedOptions: [Double] = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    static let speedOptions: [Double] = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 
     // MARK: Dependencies
 
