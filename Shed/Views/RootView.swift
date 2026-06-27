@@ -13,8 +13,6 @@ import UniformTypeIdentifiers
 struct RootView: View {
     @Bindable var viewModel: WorkspaceViewModel
 
-    @State private var showFileImporter = false
-    @State private var showYouTubeSheet = false
     @State private var viewport = Viewport()
     @FocusState private var keyboardFocused: Bool
 
@@ -26,8 +24,8 @@ struct RootView: View {
                 workspace
             } else {
                 EmptyStateView(
-                    onOpenFile: { showFileImporter = true },
-                    onYouTube: { showYouTubeSheet = true }
+                    onOpenFile: { viewModel.requestOpenFile() },
+                    onYouTube: { viewModel.requestYouTubeImport() }
                 )
             }
         }
@@ -40,13 +38,13 @@ struct RootView: View {
         .navigationSubtitle(viewModel.trackSubtitle)
         .toolbar { toolbarContent }
         .fileImporter(
-            isPresented: $showFileImporter,
+            isPresented: $viewModel.isShowingFileImporter,
             allowedContentTypes: Self.importTypes,
             allowsMultipleSelection: false
         ) { result in
             handleFileImport(result)
         }
-        .sheet(isPresented: $showYouTubeSheet) {
+        .sheet(isPresented: $viewModel.isShowingYouTubeSheet) {
             YouTubeImportSheet(viewModel: viewModel)
         }
         .onChange(of: viewModel.track?.id) { _, _ in
@@ -87,8 +85,8 @@ struct RootView: View {
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .navigation) {
             ImportMenu(
-                onOpenFile: { showFileImporter = true },
-                onYouTube: { showYouTubeSheet = true }
+                onOpenFile: { viewModel.requestOpenFile() },
+                onYouTube: { viewModel.requestYouTubeImport() }
             )
         }
         ToolbarItem(placement: .primaryAction) {

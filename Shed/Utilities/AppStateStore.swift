@@ -20,6 +20,9 @@ nonisolated struct PersistedState: Codable, Sendable {
     var cents: Int
     var loop: LoopRegion?
     var loopEnabled: Bool
+    /// Recently loaded tracks, most recent first. Optional so older persisted
+    /// blobs still decode.
+    var recentTracks: [RecentTrack]?
 
     static let `default` = PersistedState(
         workingPath: nil,
@@ -31,8 +34,19 @@ nonisolated struct PersistedState: Codable, Sendable {
         semitones: 0,
         cents: 0,
         loop: nil,
-        loopEnabled: false
+        loopEnabled: false,
+        recentTracks: nil
     )
+}
+
+/// A previously loaded track, reopenable from its persisted working file.
+nonisolated struct RecentTrack: Codable, Sendable, Equatable, Identifiable {
+    var path: String
+    var name: String
+    var source: TrackSource
+    var format: String
+
+    var id: String { path }
 }
 
 /// Persists `PersistedState` as a single JSON blob in UserDefaults.

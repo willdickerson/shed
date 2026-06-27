@@ -14,10 +14,10 @@ struct ImportMenu: View {
 
     var body: some View {
         Menu {
-            Button("Open File…", systemImage: "folder", action: onOpenFile)
+            Button("Open Audio File…", systemImage: "folder", action: onOpenFile)
             Button("Import from YouTube…", systemImage: "play.rectangle", action: onYouTube)
         } label: {
-            Label("Import", systemImage: "square.and.arrow.down")
+            Label("Import", systemImage: "folder.badge.plus")
         }
         .modifier(StyleModifier(prominent: prominent))
     }

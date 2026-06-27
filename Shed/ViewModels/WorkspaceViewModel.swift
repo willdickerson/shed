@@ -7,6 +7,7 @@
 //  of its own.
 //
 
+import AppKit
 import Foundation
 import Observation
 
@@ -40,6 +41,15 @@ final class WorkspaceViewModel {
     private(set) var volume: Double = 1.0
     private(set) var loopRegion: LoopRegion?
     private(set) var loopEnabled: Bool = false
+
+    // MARK: Recents
+
+    private(set) var recentTracks: [RecentTrack] = []
+
+    // MARK: Presentation (driven by both the toolbar and the File menu)
+
+    var isShowingFileImporter = false
+    var isShowingYouTubeSheet = false
 
     // MARK: Error presentation
 
@@ -85,10 +95,32 @@ final class WorkspaceViewModel {
 
     // MARK: - Import
 
+    func requestOpenFile() { isShowingFileImporter = true }
+    func requestYouTubeImport() { isShowingYouTubeSheet = true }
+
     func importLocalFile(at url: URL) {
         startImport { [weak self] in
             guard let self else { return }
             let track = try await localImporter.makeTrack(from: url)
+            try await finishLoading(track)
+        }
+    }
+
+    /// Reopens a recent track straight from its persisted working file — no
+    /// re-download or re-conversion.
+    func openRecent(_ item: RecentTrack) {
+        let url = URL(fileURLWithPath: item.path)
+        guard FileManager.default.fileExists(atPath: item.path) else {
+            recentTracks.removeAll { $0.path == item.path }
+            persist()
+            present(.audioLoadFailed("“\(item.name)” is no longer available."))
+            return
+        }
+        startImport { [weak self] in
+            guard let self else { return }
+            let duration = try LocalFileImporter.duration(of: url)
+            let track = Track(displayName: item.name, source: item.source,
+                              workingURL: url, duration: duration, format: item.format)
             try await finishLoading(track)
         }
     }
@@ -133,6 +165,7 @@ final class WorkspaceViewModel {
         audio.setLoop(loopRegion)
         audio.setLoopEnabled(loopEnabled)
 
+        addRecent(track)
         importStatus = .ready
         persist()
     }
@@ -151,6 +184,28 @@ final class WorkspaceViewModel {
     }
 
     func stop() { audio.stop() }
+
+    // MARK: - Recents & Finder
+
+    private func addRecent(_ track: Track) {
+        let item = RecentTrack(path: track.workingURL.path, name: track.displayName,
+                               source: track.source, format: track.format)
+        recentTracks.removeAll { $0.path == item.path }
+        recentTracks.insert(item, at: 0)
+        if recentTracks.count > 8 { recentTracks = Array(recentTracks.prefix(8)) }
+        persist()
+    }
+
+    func clearRecentFiles() {
+        recentTracks = []
+        persist()
+    }
+
+    func revealCurrentFileInFinder() {
+        guard let track else { return }
+        let url = track.originalURL ?? track.workingURL
+        NSWorkspace.shared.activateFileViewerSelecting([url])
+    }
 
     func skipBackward() { audio.skip(by: -5) }
     func skipForward() { audio.skip(by: 5) }
@@ -298,6 +353,10 @@ final class WorkspaceViewModel {
         cents = state.cents
         loopEnabled = state.loopEnabled
         loopRegion = state.loopEnabled ? state.loop : nil
+        // Keep only recents whose working file still exists.
+        recentTracks = (state.recentTracks ?? []).filter {
+            FileManager.default.fileExists(atPath: $0.path)
+        }
 
         audio.setSpeed(speed)
         audio.setPitch(cents: totalPitchCents)
@@ -342,7 +401,8 @@ final class WorkspaceViewModel {
             semitones: semitones,
             cents: cents,
             loop: loopRegion,
-            loopEnabled: loopEnabled
+            loopEnabled: loopEnabled,
+            recentTracks: recentTracks
         )
         store.save(state)
     }

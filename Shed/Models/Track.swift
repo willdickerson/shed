@@ -16,6 +16,9 @@ nonisolated struct Track: Identifiable, Equatable, Sendable {
     let duration: TimeInterval
     /// Original container format for display, e.g. "MP3" (working file is WAV).
     let format: String
+    /// The user's original file (local imports only); nil for YouTube. Used by
+    /// "Reveal Current File in Finder".
+    let originalURL: URL?
 
     init(
         id: UUID = UUID(),
@@ -23,7 +26,8 @@ nonisolated struct Track: Identifiable, Equatable, Sendable {
         source: TrackSource,
         workingURL: URL,
         duration: TimeInterval,
-        format: String = ""
+        format: String = "",
+        originalURL: URL? = nil
     ) {
         self.id = id
         self.displayName = displayName
@@ -31,5 +35,6 @@ nonisolated struct Track: Identifiable, Equatable, Sendable {
         self.workingURL = workingURL
         self.duration = duration
         self.format = format
+        self.originalURL = originalURL
     }
 }
