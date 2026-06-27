@@ -4,6 +4,22 @@ Shed bundles **yt-dlp** and **ffmpeg** inside the app, so testers need no
 Homebrew and no setup. This guide covers building, distributing, and the
 optional Homebrew install path.
 
+## 0. Cutting a release (one command)
+
+Once the binaries are fetched (step 1), a whole new release is:
+
+```sh
+./Scripts/release.sh 1.0.0-beta.2
+```
+
+That builds the universal dmg, creates/updates the GitHub release, bumps
+`version` + `sha256` in the Homebrew tap and pushes it, and updates the in-repo
+cask, landing page, and beta notes. Set `DEVELOPER_ID` / `NOTARY_PROFILE` to
+produce a notarized build (see §3). Testers then `brew update && brew upgrade
+--cask shed`, or download the new dmg.
+
+The sections below explain the individual pieces the script automates.
+
 ## 1. Fetch the bundled binaries (once)
 
 ```sh
