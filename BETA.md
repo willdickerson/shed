@@ -34,7 +34,7 @@ brew install --cask --no-quarantine willdickerson/tap/shed
 
 ## Requirements
 
-- macOS 15 (Sequoia) or later
+- macOS 14 (Sonoma) or later
 - Apple Silicon or Intel — the app and its tools are universal
 - No setup needed: yt-dlp and ffmpeg are bundled
 

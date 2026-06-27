@@ -24,7 +24,7 @@ struct WaveformView: View {
     private let topInset: CGFloat = 24
 
     /// Slightly desaturated red so the timestamp reads as calmer than the line.
-    private static let playheadTagColor = Color.red.mix(with: .gray, by: 0.1)
+    private static let playheadTagColor = Color(red: 0.95, green: 0.26, blue: 0.22)
 
     private enum DragMode: Equatable {
         case create(anchorTime: TimeInterval, startX: CGFloat)
