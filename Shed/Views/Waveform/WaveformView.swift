@@ -23,6 +23,9 @@ struct WaveformView: View {
     private let handleHitWidth: CGFloat = 10
     private let topInset: CGFloat = 24
 
+    /// Slightly desaturated red so the timestamp reads as calmer than the line.
+    private static let playheadTagColor = Color.red.mix(with: .gray, by: 0.1)
+
     private enum DragMode: Equatable {
         case create(anchorTime: TimeInterval, startX: CGFloat)
         case moveStart
@@ -177,7 +180,7 @@ struct WaveformView: View {
                     .fill(Color.red)
                     .frame(width: 2, height: bodyHeight)
                     .position(x: px, y: topInset + bodyHeight / 2)
-                TimeTag(text: TimeFormatting.precise(viewModel.currentTime), color: .red)
+                TimeTag(text: TimeFormatting.precise(viewModel.currentTime), color: Self.playheadTagColor)
                     .position(x: px, y: topInset / 2)
             }
             // Slight overlap between samples keeps motion continuous.

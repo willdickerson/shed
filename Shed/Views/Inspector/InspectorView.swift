@@ -2,7 +2,8 @@
 //  InspectorView.swift
 //  Shed
 //
-//  Calm, low-chrome inspector: File, Playback (pitch), Loop. Speed lives in the
+//  A spacious, scannable inspector in the spirit of Logic / Final Cut / Xcode
+//  panels — grouped cards rather than a property table. Speed lives in the
 //  transport bar since it's adjusted constantly.
 //
 
@@ -13,8 +14,8 @@ struct InspectorView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                fileSection
+            VStack(alignment: .leading, spacing: 26) {
+                trackSection
                 playbackSection
                 loopSection
             }
@@ -23,61 +24,120 @@ struct InspectorView: View {
         .background(Color(nsColor: .windowBackgroundColor))
     }
 
-    // MARK: - File
+    // MARK: - Track
 
-    private var fileSection: some View {
-        InspectorSection("File") {
-            InspectorRow(label: "Name", value: viewModel.track?.displayName ?? "—")
-            InspectorRow(label: "Source", value: viewModel.track?.source.displayName ?? "—")
-            InspectorRow(label: "Duration", value: TimeFormatting.clock(viewModel.duration))
+    private var trackSection: some View {
+        InspectorSection("Track") {
+            VStack(alignment: .leading, spacing: 5) {
+                Text(viewModel.track?.displayName ?? "—")
+                    .font(.headline)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(trackSubtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
         }
+    }
+
+    private var trackSubtitle: String {
+        guard let track = viewModel.track else { return "" }
+        return "\(track.source.displayName) • \(TimeFormatting.clock(track.duration))"
     }
 
     // MARK: - Playback
 
     private var playbackSection: some View {
-        InspectorSection("Playback") {
-            Stepper(value: semitoneBinding, in: -12...12) {
-                InspectorRow(label: "Semitones", value: signed(viewModel.semitones))
-            }
+        InspectorSection("Pitch") {
+            stepperGroup(
+                title: "Semitones",
+                value: signed(viewModel.semitones),
+                canDecrement: viewModel.semitones > -12,
+                decrement: { viewModel.setSemitones(viewModel.semitones - 1) },
+                canIncrement: viewModel.semitones < 12,
+                increment: { viewModel.setSemitones(viewModel.semitones + 1) }
+            )
 
-            VStack(alignment: .leading, spacing: 7) {
-                InspectorRow(label: "Cents", value: signed(viewModel.cents))
-                Slider(value: centsBinding, in: -100...100, step: 1)
+            stepperGroup(
+                title: "Cents",
+                value: signed(viewModel.cents),
+                canDecrement: viewModel.cents > -100,
+                decrement: { viewModel.setCents(viewModel.cents - 1) },
+                canIncrement: viewModel.cents < 100,
+                increment: { viewModel.setCents(viewModel.cents + 1) }
+            )
+
+            Button {
+                viewModel.resetPitch()
+            } label: {
+                Label("Reset Pitch", systemImage: "arrow.counterclockwise")
+                    .font(.subheadline)
+            }
+            .buttonStyle(.borderless)
+            .controlSize(.small)
+            .disabled(!viewModel.isPitchAdjusted)
+            .frame(maxWidth: .infinity)
+            .padding(.top, 2)
+        }
+    }
+
+    private func stepperGroup(title: String, value: String,
+                              canDecrement: Bool, decrement: @escaping () -> Void,
+                              canIncrement: Bool, increment: @escaping () -> Void) -> some View {
+        VStack(spacing: 8) {
+            Text(title)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            HStack(spacing: 8) {
+                adjustButton("minus", enabled: canDecrement, action: decrement)
+                Text(value)
+                    .font(.system(.body, design: .rounded).weight(.medium))
+                    .monospacedDigit()
+                    .frame(width: 46)
+                adjustButton("plus", enabled: canIncrement, action: increment)
             }
         }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func adjustButton(_ symbol: String, enabled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 10, weight: .semibold))
+                .frame(width: 18, height: 18)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .disabled(!enabled)
     }
 
     // MARK: - Loop
 
     private var loopSection: some View {
         InspectorSection("Loop") {
-            InspectorRow(label: "Start", value: loopValue(viewModel.loopRegion?.start))
-            InspectorRow(label: "End", value: loopValue(viewModel.loopRegion?.end))
-            InspectorRow(label: "Length", value: loopValue(viewModel.loopRegion?.duration))
+            VStack(spacing: 9) {
+                InspectorRow(label: "Start", value: loopTime(viewModel.loopRegion?.start))
+                InspectorRow(label: "End", value: loopTime(viewModel.loopRegion?.end))
+                InspectorRow(label: "Length", value: loopLength(viewModel.loopRegion?.duration))
+            }
 
-            Toggle("Loop Enabled", isOn: loopBinding)
+            Divider()
+                .padding(.vertical, 2)
+
+            Toggle("", isOn: loopBinding)
                 .toggleStyle(.switch)
-                .padding(.top, 2)
+                .labelsHidden()
+                .frame(maxWidth: .infinity, alignment: .center)
 
             Button("Clear Loop") { viewModel.clearLoop() }
                 .buttonStyle(.bordered)
                 .controlSize(.large)
                 .frame(maxWidth: .infinity)
                 .disabled(viewModel.loopRegion == nil)
-                .padding(.top, 4)
+                .padding(.top, 2)
         }
     }
 
     // MARK: - Bindings & formatting
-
-    private var semitoneBinding: Binding<Int> {
-        Binding(get: { viewModel.semitones }, set: { viewModel.setSemitones($0) })
-    }
-
-    private var centsBinding: Binding<Double> {
-        Binding(get: { Double(viewModel.cents) }, set: { viewModel.setCents(Int($0.rounded())) })
-    }
 
     private var loopBinding: Binding<Bool> {
         Binding(
@@ -88,13 +148,19 @@ struct InspectorView: View {
 
     private func signed(_ value: Int) -> String { value > 0 ? "+\(value)" : "\(value)" }
 
-    private func loopValue(_ time: TimeInterval?) -> String {
+    private func loopTime(_ time: TimeInterval?) -> String {
         guard let time else { return "—" }
         return TimeFormatting.precise(time)
     }
+
+    private func loopLength(_ duration: TimeInterval?) -> String {
+        guard let duration else { return "—" }
+        if duration < 60 { return String(format: "%.1f s", duration) }
+        return TimeFormatting.precise(duration)
+    }
 }
 
-/// An inspector group: a quiet header above a rounded card holding its rows.
+/// An inspector group: a quiet header above a rounded card holding its content.
 struct InspectorSection<Content: View>: View {
     let title: String
     @ViewBuilder let content: Content
@@ -105,16 +171,16 @@ struct InspectorSection<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 9) {
             Text(title)
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .padding(.leading, 4)
 
-            VStack(alignment: .leading, spacing: 11) {
+            VStack(alignment: .leading, spacing: 12) {
                 content
             }
-            .padding(14)
+            .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 10)

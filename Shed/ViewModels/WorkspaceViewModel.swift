@@ -198,6 +198,15 @@ final class WorkspaceViewModel {
         persist()
     }
 
+    func resetPitch() {
+        semitones = 0
+        cents = 0
+        audio.setPitch(cents: 0)
+        persist()
+    }
+
+    var isPitchAdjusted: Bool { semitones != 0 || cents != 0 }
+
     // MARK: - Loop
 
     func toggleLoop() {
