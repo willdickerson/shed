@@ -22,8 +22,8 @@ nonisolated enum ShedError: LocalizedError, Equatable {
 
     var errorDescription: String? {
         switch self {
-        case let .missingBinary(name, path):
-            return "Couldn’t find “\(name)”. Shed expected it at \(path). Install it with: brew install yt-dlp ffmpeg"
+        case let .missingBinary(name, _):
+            return "Couldn’t find a usable copy of “\(name)”. It normally ships inside Shed — try reinstalling the app. Alternatively, install it with Homebrew: brew install \(name)"
         case .invalidURL:
             return "That doesn’t look like a valid URL. Paste a full YouTube link."
         case let .downloadFailed(detail):

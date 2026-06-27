@@ -8,3 +8,6 @@ xcuserdata/
 # Build artifacts
 build/
 DerivedData/
+
+# Vendored beta binaries — large; fetched via Scripts/fetch-vendor-binaries.sh
+Vendor/bin/
