@@ -60,6 +60,9 @@ final class WorkspaceViewModel {
     private var importTask: Task<Void, Never>?
     private var tuningTask: Task<Void, Never>?
 
+    /// Per-song speed/pitch/loop, keyed by working-file path.
+    private var trackSettings: [String: TrackSettings] = [:]
+
     // MARK: Init
 
     init(
@@ -161,15 +164,24 @@ final class WorkspaceViewModel {
         let waveform = try await waveformGenerator.generate(from: track.workingURL)
 
         try audio.load(url: track.workingURL)
-        audio.setSpeed(speed)
-        audio.setPitch(cents: totalPitchCents)
 
         self.track = track
         self.waveform = waveform
         tuningTask?.cancel()
         tuningState = .idle
         loopUndoStack.removeAll()
+
+        // Restore this song's own settings (defaults for a song not seen before).
+        let saved = trackSettings[track.workingURL.path]
+        speed = saved?.speed ?? 1.0
+        semitones = saved?.semitones ?? 0
+        cents = saved?.cents ?? 0
+        loopEnabled = saved?.loopEnabled ?? false
+        loopRegion = (saved?.loopEnabled == true) ? saved?.loop : nil
         clampLoopToTrack()
+
+        audio.setSpeed(speed)
+        audio.setPitch(cents: totalPitchCents)
         audio.setLoop(loopRegion)
         audio.setLoopEnabled(loopEnabled)
 
@@ -446,21 +458,16 @@ final class WorkspaceViewModel {
     private func restore() {
         let state = store.load()
         youTubeURLString = state.youTubeURLString
-        speed = state.speed
-        semitones = state.semitones
-        cents = state.cents
-        loopEnabled = state.loopEnabled
-        loopRegion = state.loopEnabled ? state.loop : nil
+        trackSettings = state.trackSettings ?? [:]
         // Keep only recents whose working file still exists.
         recentTracks = (state.recentTracks ?? []).filter {
             FileManager.default.fileExists(atPath: $0.path)
         }
 
-        audio.setSpeed(speed)
-        audio.setPitch(cents: totalPitchCents)
         audio.setVolume(volume)
 
-        // Re-open the last track if its working WAV still exists.
+        // Re-open the last track if its working WAV still exists; its own
+        // settings are applied in finishLoading.
         guard
             let path = state.workingPath,
             FileManager.default.fileExists(atPath: path),
@@ -489,18 +496,26 @@ final class WorkspaceViewModel {
     }
 
     private func persist() {
+        // Capture the current song's settings, then keep only settings for songs
+        // still in Recents so the store stays bounded.
+        if let path = track?.workingURL.path {
+            trackSettings[path] = TrackSettings(
+                speed: speed, semitones: semitones, cents: cents,
+                loop: loopRegion, loopEnabled: loopEnabled
+            )
+        }
+        var keep = Set(recentTracks.map(\.path))
+        if let path = track?.workingURL.path { keep.insert(path) }
+        trackSettings = trackSettings.filter { keep.contains($0.key) }
+
         let state = PersistedState(
             workingPath: track?.workingURL.path,
             displayName: track?.displayName,
             source: track?.source,
             format: track?.format,
             youTubeURLString: youTubeURLString,
-            speed: speed,
-            semitones: semitones,
-            cents: cents,
-            loop: loopRegion,
-            loopEnabled: loopEnabled,
-            recentTracks: recentTracks
+            recentTracks: recentTracks,
+            trackSettings: trackSettings
         )
         store.save(state)
     }

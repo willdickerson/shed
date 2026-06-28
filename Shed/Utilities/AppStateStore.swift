@@ -7,6 +7,16 @@
 
 import Foundation
 
+/// Per-song playback settings, keyed by working-file path. Lets loop and pitch
+/// be remembered for each song rather than carried across songs.
+nonisolated struct TrackSettings: Codable, Sendable, Equatable {
+    var speed: Double
+    var semitones: Int
+    var cents: Int
+    var loop: LoopRegion?
+    var loopEnabled: Bool
+}
+
 /// Snapshot of persisted UI state, restored on launch.
 nonisolated struct PersistedState: Codable, Sendable {
     var workingPath: String?
@@ -15,14 +25,10 @@ nonisolated struct PersistedState: Codable, Sendable {
     /// Optional so older persisted blobs (without this key) still decode.
     var format: String?
     var youTubeURLString: String
-    var speed: Double
-    var semitones: Int
-    var cents: Int
-    var loop: LoopRegion?
-    var loopEnabled: Bool
-    /// Recently loaded tracks, most recent first. Optional so older persisted
-    /// blobs still decode.
+    /// Recently loaded tracks, most recent first.
     var recentTracks: [RecentTrack]?
+    /// Speed/pitch/loop per song, keyed by working-file path.
+    var trackSettings: [String: TrackSettings]?
 
     static let `default` = PersistedState(
         workingPath: nil,
@@ -30,12 +36,8 @@ nonisolated struct PersistedState: Codable, Sendable {
         source: nil,
         format: nil,
         youTubeURLString: "",
-        speed: 1.0,
-        semitones: 0,
-        cents: 0,
-        loop: nil,
-        loopEnabled: false,
-        recentTracks: nil
+        recentTracks: nil,
+        trackSettings: nil
     )
 }
 
