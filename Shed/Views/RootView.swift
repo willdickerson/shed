@@ -33,7 +33,11 @@ struct RootView: View {
         .focused($keyboardFocused)
         .focusEffectDisabled()
         .onAppear { keyboardFocused = true }
-        .modifier(KeyboardShortcuts(viewModel: viewModel))
+        .modifier(KeyboardShortcuts(
+            viewModel: viewModel,
+            onZoomIn: { adjustZoom(1.5) },
+            onZoomOut: { adjustZoom(1 / 1.5) }
+        ))
         .navigationTitle(viewModel.track?.displayName ?? "Shed")
         .navigationSubtitle(viewModel.trackSubtitle)
         .toolbar { toolbarContent }
@@ -92,6 +96,11 @@ struct RootView: View {
         ToolbarItem(placement: .primaryAction) {
             ImportStatusBadge(status: viewModel.importStatus)
         }
+    }
+
+    private func adjustZoom(_ factor: Double) {
+        guard viewModel.hasTrack else { return }
+        viewport.zoom = min(max(1, viewport.zoom * factor), Viewport.maxZoom)
     }
 
     private func handleFileImport(_ result: Result<[URL], Error>) {

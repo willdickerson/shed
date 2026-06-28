@@ -22,8 +22,11 @@ struct ShortcutsView: View {
         .init(keys: "Esc", action: "Clear loop"),
         .init(keys: "[", action: "Set loop start"),
         .init(keys: "]", action: "Set loop end"),
+        .init(keys: "Return", action: "Jump to loop start"),
+        .init(keys: "⌘Z", action: "Undo loop change"),
         .init(keys: "−", action: "Slower"),
-        .init(keys: "=", action: "Faster")
+        .init(keys: "=", action: "Faster"),
+        .init(keys: "⌘− / ⌘=", action: "Zoom out / in")
     ]
 
     var body: some View {

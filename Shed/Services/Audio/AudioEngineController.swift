@@ -159,14 +159,14 @@ final class AudioEngineController {
     func seek(to time: TimeInterval) {
         guard audioFile != nil else { return }
 
-        // While looping, the playhead is constrained to the region; seeking
-        // (re)anchors the loop at its start so playback stays seamless.
+        // While looping, the playhead stays inside the region: seeking continues
+        // from the requested point (clamped into the loop) and keeps looping.
         if let loop = activeLoop {
+            let target = min(max(time, loop.start), loop.end)
+            scheduleLoop(loop, continuingFrom: target)
             if isPlaying {
-                scheduleLoop(loop)
+                if !engine.isRunning { try? engine.start() }
                 player.play()
-            } else {
-                currentTime = loop.start
             }
             return
         }

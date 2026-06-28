@@ -249,8 +249,12 @@ struct WaveformView: View {
                 }
                 guard let mode = dragMode else { return }
                 switch mode {
-                case let .create(anchorTime, _):
-                    previewLoop = LoopRegion(start: anchorTime, end: t(value.location.x))
+                case let .create(anchorTime, startX):
+                    // Only preview a new loop once it's an actual drag — a click
+                    // shouldn't momentarily replace the existing loop.
+                    if abs(value.location.x - startX) >= 4 {
+                        previewLoop = LoopRegion(start: anchorTime, end: t(value.location.x))
+                    }
                 case .moveStart:
                     let end = viewModel.loopRegion?.end ?? viewModel.duration
                     previewLoop = LoopRegion(start: t(value.location.x), end: end)

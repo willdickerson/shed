@@ -10,9 +10,25 @@ import SwiftUI
 
 struct KeyboardShortcuts: ViewModifier {
     let viewModel: WorkspaceViewModel
+    var onZoomIn: () -> Void = {}
+    var onZoomOut: () -> Void = {}
 
     func body(content: Content) -> some View {
         content.onKeyPress { press in
+            // ⌘-combinations: zoom and undo. Other ⌘ keys fall through to menus.
+            if press.modifiers.contains(.command) {
+                switch press.key {
+                case KeyEquivalent("="), KeyEquivalent("+"):
+                    onZoomIn(); return .handled
+                case KeyEquivalent("-"), KeyEquivalent("_"):
+                    onZoomOut(); return .handled
+                case KeyEquivalent("z"), KeyEquivalent("Z"):
+                    viewModel.undoLoop(); return .handled
+                default:
+                    return .ignored
+                }
+            }
+
             switch press.key {
             case .space:
                 viewModel.togglePlayPause(); return .handled
@@ -20,6 +36,8 @@ struct KeyboardShortcuts: ViewModifier {
                 viewModel.skipBackward(); return .handled
             case .rightArrow:
                 viewModel.skipForward(); return .handled
+            case .return:
+                viewModel.returnToStart(); return .handled
             case .escape:
                 viewModel.clearLoop(); return .handled
             default:

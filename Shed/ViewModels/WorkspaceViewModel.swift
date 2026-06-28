@@ -168,6 +168,7 @@ final class WorkspaceViewModel {
         self.waveform = waveform
         tuningTask?.cancel()
         tuningState = .idle
+        loopUndoStack.removeAll()
         clampLoopToTrack()
         audio.setLoop(loopRegion)
         audio.setLoopEnabled(loopEnabled)
@@ -316,10 +317,39 @@ final class WorkspaceViewModel {
 
     // MARK: - Loop
 
+    private struct LoopSnapshot: Equatable {
+        var region: LoopRegion?
+        var enabled: Bool
+    }
+    private var loopUndoStack: [LoopSnapshot] = []
+
+    var canUndoLoop: Bool { !loopUndoStack.isEmpty }
+
+    /// Records the loop state before a change so it can be undone.
+    private func snapshotLoop() {
+        loopUndoStack.append(LoopSnapshot(region: loopRegion, enabled: loopEnabled))
+        if loopUndoStack.count > 25 { loopUndoStack.removeFirst() }
+    }
+
+    /// Restores the loop to its state before the last change (⌘Z) — brings back
+    /// a loop cleared by accident.
+    func undoLoop() {
+        guard let previous = loopUndoStack.popLast() else { return }
+        loopRegion = previous.region
+        loopEnabled = previous.enabled
+        audio.setLoop(loopRegion)
+        audio.setLoopEnabled(loopEnabled)
+        persist()
+    }
+
     func toggleLoop() {
+        snapshotLoop()
         if loopEnabled {
             // Turning looping off also clears the drawn region.
-            clearLoop()
+            loopRegion = nil
+            loopEnabled = false
+            audio.setLoop(nil)
+            audio.setLoopEnabled(false)
         } else {
             if loopRegion == nil {
                 // Default to a 4-second loop starting at the playhead.
@@ -329,15 +359,19 @@ final class WorkspaceViewModel {
             }
             loopEnabled = true
             audio.setLoopEnabled(true)
-            persist()
         }
+        persist()
     }
 
-    /// Handles a click on the waveform: inside an active loop keeps looping,
-    /// outside it exits loop mode and plays from the clicked position.
+    /// Handles a click on the waveform: inside an active loop, repositions the
+    /// playhead within it and keeps looping; outside, exits loop mode and plays
+    /// from the clicked position.
     func handleWaveformClick(at time: TimeInterval) {
         if loopEnabled, let loop = loopRegion {
-            if time >= loop.start && time <= loop.end { return }
+            if time >= loop.start && time <= loop.end {
+                seek(to: time)
+                return
+            }
             clearLoop()
         }
         seek(to: time)
@@ -346,6 +380,7 @@ final class WorkspaceViewModel {
     /// Creates a loop and enters loop mode in one step — used when the user
     /// drags a region on the waveform.
     func createLoop(_ region: LoopRegion) {
+        snapshotLoop()
         loopRegion = region.clamped(to: duration)
         audio.setLoop(loopRegion)
         loopEnabled = true
@@ -355,6 +390,7 @@ final class WorkspaceViewModel {
 
     /// Updates the loop region while preserving whether looping is enabled.
     func setLoopRegion(_ region: LoopRegion?) {
+        snapshotLoop()
         loopRegion = region.map { $0.clamped(to: duration) }
         audio.setLoop(loopRegion)
         persist()
@@ -370,7 +406,17 @@ final class WorkspaceViewModel {
         createLoop(LoopRegion(start: start, end: currentTime))
     }
 
+    /// Return key: jump to the loop start while looping, else the track start.
+    func returnToStart() {
+        if loopEnabled, let loop = loopRegion, loop.isUsable {
+            seek(to: loop.start)
+        } else {
+            seek(to: 0)
+        }
+    }
+
     func clearLoop() {
+        snapshotLoop()
         loopRegion = nil
         loopEnabled = false
         audio.setLoop(nil)
