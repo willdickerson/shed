@@ -11,7 +11,9 @@ struct ShedApp: App {
     @State private var viewModel = WorkspaceViewModel()
 
     var body: some Scene {
-        WindowGroup {
+        // A singleton Window (not WindowGroup): Shed is a single-session app, so
+        // it can't be duplicated into extra windows that share one view model.
+        Window("Shed", id: "main") {
             RootView(viewModel: viewModel)
                 .frame(minWidth: 980, minHeight: 620)
         }
