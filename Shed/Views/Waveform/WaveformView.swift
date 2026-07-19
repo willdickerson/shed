@@ -19,6 +19,10 @@ struct WaveformView: View {
     @State private var dragMode: DragMode?
     @State private var previewLoop: LoopRegion?
     @State private var hoveredHandle: HandleSide?
+    /// Set when a manual pan moves the playhead out of view, so auto-follow
+    /// doesn't immediately yank the viewport back during playback. Cleared as
+    /// soon as the playhead is back inside the visible window.
+    @State private var followSuspended = false
 
     private let handleHitWidth: CGFloat = 10
     private let topInset: CGFloat = 24
@@ -56,6 +60,9 @@ struct WaveformView: View {
                 playhead(size: size, visibleStart: visibleStart, visibleDuration: visibleDuration)
             }
             .contentShape(Rectangle())
+            .background(ScrollWheelCatcher { deltaX, _ in
+                pan(byPixels: deltaX, width: size.width, total: total)
+            })
             .gesture(dragGesture(size: size, total: total,
                                  visibleStart: visibleStart, visibleDuration: visibleDuration))
             .onContinuousHover { phase in
@@ -226,9 +233,24 @@ struct WaveformView: View {
         guard viewport.zoom > 1, viewModel.isPlaying else { return }
         let visibleStart = viewport.clampedStart(total: total)
         let visibleDuration = viewport.visibleDuration(total: total)
-        if time < visibleStart || time > visibleStart + visibleDuration {
+        let playheadVisible = time >= visibleStart && time <= visibleStart + visibleDuration
+        if followSuspended {
+            if playheadVisible { followSuspended = false }
+            return
+        }
+        if !playheadVisible {
             viewport.start = min(max(0, time - visibleDuration * 0.2), max(0, total - visibleDuration))
         }
+    }
+
+    /// Two-finger scroll (or shift + wheel) pans the visible window.
+    private func pan(byPixels deltaX: CGFloat, width: CGFloat, total: TimeInterval) {
+        guard viewport.pan(byPixels: Double(deltaX), width: Double(width), total: total) else { return }
+        onInteract()
+        let visibleStart = viewport.start
+        let visibleDuration = viewport.visibleDuration(total: total)
+        followSuspended = viewModel.currentTime < visibleStart
+            || viewModel.currentTime > visibleStart + visibleDuration
     }
 
     // MARK: - Gesture
