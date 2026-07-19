@@ -1,6 +1,6 @@
 # Packaging Shed for beta testers
 
-Shed bundles **yt-dlp** and **ffmpeg** inside the app, so testers need no
+Shed bundles **yt-dlp**, **ffmpeg**, and **deno** inside the app, so testers need no
 Homebrew and no setup. This guide covers building, distributing, and the
 optional Homebrew install path.
 
@@ -26,7 +26,7 @@ The sections below explain the individual pieces the script automates.
 ./Scripts/fetch-vendor-binaries.sh
 ```
 
-This downloads universal (arm64 + x86_64) copies of yt-dlp and ffmpeg into
+This downloads universal (arm64 + x86_64) copies of yt-dlp, ffmpeg, and deno into
 `Vendor/bin/`. They're git-ignored (large), so re-run on a fresh clone or to
 update versions. The Xcode build copies them into
 `Shed.app/Contents/Resources/bin/` and marks them executable.
@@ -67,7 +67,8 @@ Gatekeeper blocks the download on every tester's Mac.
 codesign --force --options runtime --timestamp \
   --sign "Developer ID Application: YOUR NAME (TEAMID)" \
   Shed.app/Contents/Resources/bin/yt-dlp \
-  Shed.app/Contents/Resources/bin/ffmpeg
+  Shed.app/Contents/Resources/bin/ffmpeg \
+  Shed.app/Contents/Resources/bin/deno
 codesign --force --options runtime --timestamp --deep \
   --sign "Developer ID Application: YOUR NAME (TEAMID)" Shed.app
 

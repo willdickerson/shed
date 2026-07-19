@@ -34,7 +34,7 @@ BUILD_DIR="build"
 DIST_DIR="dist"
 DMG="$DIST_DIR/Shed-$VERSION.dmg"
 
-if [ ! -x "Vendor/bin/yt-dlp" ] || [ ! -x "Vendor/bin/ffmpeg" ]; then
+if [ ! -x "Vendor/bin/yt-dlp" ] || [ ! -x "Vendor/bin/ffmpeg" ] || [ ! -x "Vendor/bin/deno" ]; then
   echo "error: Vendor/bin binaries missing — run ./Scripts/fetch-vendor-binaries.sh first" >&2
   exit 1
 fi
@@ -62,6 +62,7 @@ fi
 # Sign inner binaries first, then the app bundle (inside-out).
 "${SIGN[@]}" "$APP/Contents/Resources/bin/ffmpeg"
 "${SIGN[@]}" "$APP/Contents/Resources/bin/yt-dlp"
+"${SIGN[@]}" "$APP/Contents/Resources/bin/deno"
 "${SIGN[@]}" "$APP"
 codesign --verify --deep --strict "$APP" && echo "→ Signature verified."
 

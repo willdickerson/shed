@@ -37,18 +37,27 @@ nonisolated struct YouTubeImporter {
         let ytDlp = try binaries.ytDlp()
         _ = try binaries.ffmpeg() // fail early if ffmpeg is missing too
 
+        // yt-dlp needs a JavaScript runtime to solve YouTube's player
+        // challenges; it looks deno up via PATH, which for a GUI app doesn't
+        // include Homebrew. Point it at our copy explicitly. If none is found,
+        // still try the download — yt-dlp falls back to non-JS clients.
+        let deno = try? binaries.deno()
+
         let token = "yt_" + UUID().uuidString.prefix(8)
         let template = try workingDirectory.makeDestination(token: "\(token)__%(title)s", ext: "%(ext)s")
 
         // MARK: Download
         onStatus(.downloading(progress: nil))
-        let downloadArgs = [
+        var downloadArgs = [
             "--no-playlist",
             "--newline",
             "-f", "bestaudio/best",
-            "-o", template.path,
-            url.absoluteString
+            "-o", template.path
         ]
+        if let deno {
+            downloadArgs += ["--js-runtimes", "deno:\(deno.path)"]
+        }
+        downloadArgs.append(url.absoluteString)
         let download = try await runner.run(executable: ytDlp, arguments: downloadArgs) { line in
             if let progress = Self.parseProgress(line) {
                 onStatus(.downloading(progress: progress))
