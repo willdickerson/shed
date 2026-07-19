@@ -19,6 +19,7 @@ nonisolated struct BinaryLocator {
 
     func ytDlp() throws -> URL { try resolve(name: "yt-dlp") }
     func ffmpeg() throws -> URL { try resolve(name: "ffmpeg") }
+    func deno() throws -> URL { try resolve(name: "deno") }
 
     // MARK: - Resolution
 

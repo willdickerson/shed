@@ -13,7 +13,7 @@ cask "shed" do
 
   app "Shed.app"
 
-  # yt-dlp and ffmpeg are bundled inside the app, so no dependencies are needed.
+  # yt-dlp, ffmpeg, and deno are bundled inside the app, so no dependencies are needed.
 
   zap trash: [
     "~/Library/Application Support/Shed",

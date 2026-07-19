@@ -129,7 +129,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -e\nSRC=\"$SRCROOT/Vendor/bin\"\nDEST=\"$BUILT_PRODUCTS_DIR/$CONTENTS_FOLDER_PATH/Resources/bin\"\nmkdir -p \"$DEST\"\nfor tool in yt-dlp ffmpeg; do\n  if [ -f \"$SRC/$tool\" ]; then\n    if [ ! -f \"$DEST/$tool\" ] || [ \"$SRC/$tool\" -nt \"$DEST/$tool\" ]; then\n      cp -f \"$SRC/$tool\" \"$DEST/$tool\"\n    fi\n    chmod +x \"$DEST/$tool\"\n  else\n    echo \"warning: $SRC/$tool missing - run Scripts/fetch-vendor-binaries.sh to bundle it\"\n  fi\ndone\n";
+			shellScript = "set -e\nSRC=\"$SRCROOT/Vendor/bin\"\nDEST=\"$BUILT_PRODUCTS_DIR/$CONTENTS_FOLDER_PATH/Resources/bin\"\nmkdir -p \"$DEST\"\nfor tool in yt-dlp ffmpeg deno; do\n  if [ -f \"$SRC/$tool\" ]; then\n    if [ ! -f \"$DEST/$tool\" ] || [ \"$SRC/$tool\" -nt \"$DEST/$tool\" ]; then\n      cp -f \"$SRC/$tool\" \"$DEST/$tool\"\n    fi\n    chmod +x \"$DEST/$tool\"\n  else\n    echo \"warning: $SRC/$tool missing - run Scripts/fetch-vendor-binaries.sh to bundle it\"\n  fi\ndone\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

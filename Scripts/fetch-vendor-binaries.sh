@@ -2,9 +2,11 @@
 #
 # fetch-vendor-binaries.sh
 #
-# Downloads self-contained, universal (arm64 + x86_64) copies of yt-dlp and
-# ffmpeg into Vendor/bin/. These get copied into Shed.app/Contents/Resources/bin
-# at build time, so beta testers don't need Homebrew or any setup.
+# Downloads self-contained, universal (arm64 + x86_64) copies of yt-dlp,
+# ffmpeg, and deno into Vendor/bin/. These get copied into
+# Shed.app/Contents/Resources/bin at build time, so beta testers don't need
+# Homebrew or any setup. (deno is the JavaScript runtime yt-dlp needs to solve
+# YouTube's player challenges; without it downloads fail with HTTP 403.)
 #
 # Run once from the project root (the folder containing Shed.xcodeproj):
 #   ./Scripts/fetch-vendor-binaries.sh
@@ -35,11 +37,24 @@ unzip -oq "$TMP/ff-arm.zip" -d "$TMP/arm"
 echo "→ Combining into a universal ffmpeg…"
 lipo -create "$TMP/intel/ffmpeg" "$TMP/arm/ffmpeg" -output "$DEST/ffmpeg"
 
-chmod +x "$DEST/yt-dlp" "$DEST/ffmpeg"
+echo "→ Downloading deno (x86_64)…"
+curl -fSL --retry 3 -o "$TMP/deno-intel.zip" \
+  "https://github.com/denoland/deno/releases/latest/download/deno-x86_64-apple-darwin.zip"
+unzip -oq "$TMP/deno-intel.zip" -d "$TMP/deno-intel"
+
+echo "→ Downloading deno (arm64)…"
+curl -fSL --retry 3 -o "$TMP/deno-arm.zip" \
+  "https://github.com/denoland/deno/releases/latest/download/deno-aarch64-apple-darwin.zip"
+unzip -oq "$TMP/deno-arm.zip" -d "$TMP/deno-arm"
+
+echo "→ Combining into a universal deno…"
+lipo -create "$TMP/deno-intel/deno" "$TMP/deno-arm/deno" -output "$DEST/deno"
+
+chmod +x "$DEST/yt-dlp" "$DEST/ffmpeg" "$DEST/deno"
 
 echo
 echo "Done. Vendored binaries:"
-for b in yt-dlp ffmpeg; do
+for b in yt-dlp ffmpeg deno; do
   printf '  %-8s %s  [%s]\n' "$b" \
     "$(du -h "$DEST/$b" | cut -f1)" "$(lipo -archs "$DEST/$b" | tr '\n' ' ')"
 done
