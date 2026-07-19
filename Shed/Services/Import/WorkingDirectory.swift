@@ -29,9 +29,25 @@ nonisolated struct WorkingDirectory {
         }
     }
 
-    /// A fresh, unique WAV destination inside the imports directory.
-    func makeWAVDestination(token: String = UUID().uuidString) throws -> URL {
-        try importsURL().appendingPathComponent("\(token).wav")
+    /// A unique WAV destination named after the track, e.g. "Blue in Green – 3F2A.wav",
+    /// so the imports folder stays browsable in Finder.
+    func makeWAVDestination(name: String) throws -> URL {
+        let token = UUID().uuidString.prefix(4)
+        return try importsURL().appendingPathComponent("\(Self.sanitized(name)) – \(token).wav")
+    }
+
+    /// Makes a display name safe to use as a filename.
+    static func sanitized(_ name: String) -> String {
+        var result = name
+            .components(separatedBy: .controlCharacters).joined()
+            .replacingOccurrences(of: "/", with: "-")
+            .replacingOccurrences(of: ":", with: "-")
+            .trimmingCharacters(in: .whitespaces)
+        while result.hasPrefix(".") { result.removeFirst() } // no hidden files
+        if result.count > 60 {
+            result = String(result.prefix(60)).trimmingCharacters(in: .whitespaces)
+        }
+        return result.isEmpty ? "Import" : result
     }
 
     /// Unique path with a chosen extension, used as a yt-dlp download target.

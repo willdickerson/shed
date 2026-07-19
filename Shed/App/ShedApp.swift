@@ -34,6 +34,7 @@ struct ShedApp: App {
                         Button("Clear Menu") { viewModel.clearRecentFiles() }
                     }
                 }
+                Button("Open from Imports…") { viewModel.openFromImports() }
                 Button("Import from YouTube…") { viewModel.requestYouTubeImport() }
                     .keyboardShortcut("o", modifiers: [.command, .shift])
                 Divider()

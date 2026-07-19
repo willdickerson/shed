@@ -38,6 +38,11 @@ struct RootView: View {
             onZoomIn: { adjustZoom(1.5) },
             onZoomOut: { adjustZoom(1 / 1.5) }
         ))
+        .dropDestination(for: URL.self) { urls, _ in
+            guard let url = urls.first, url.isFileURL else { return false }
+            viewModel.importLocalFile(at: url)
+            return true
+        }
         .navigationTitle(viewModel.track?.displayName ?? "Shed")
         .navigationSubtitle(viewModel.trackSubtitle)
         .toolbar { toolbarContent }
