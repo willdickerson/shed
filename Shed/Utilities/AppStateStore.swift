@@ -24,7 +24,6 @@ nonisolated struct PersistedState: Codable, Sendable {
     var source: TrackSource?
     /// Optional so older persisted blobs (without this key) still decode.
     var format: String?
-    var youTubeURLString: String
     /// Recently loaded tracks, most recent first.
     var recentTracks: [RecentTrack]?
     /// Speed/pitch/loop per song, keyed by working-file path.
@@ -35,7 +34,6 @@ nonisolated struct PersistedState: Codable, Sendable {
         displayName: nil,
         source: nil,
         format: nil,
-        youTubeURLString: "",
         recentTracks: nil,
         trackSettings: nil
     )

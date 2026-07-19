@@ -10,6 +10,7 @@
 import AppKit
 import Foundation
 import Observation
+import UniformTypeIdentifiers
 
 @Observable
 @MainActor
@@ -107,6 +108,13 @@ final class WorkspaceViewModel {
     func requestYouTubeImport() { isShowingYouTubeSheet = true }
 
     func importLocalFile(at url: URL) {
+        // A file still in Recents reopens through its entry, which remembers the
+        // proper name/source — working files imported before readable filenames
+        // carry only a UUID on disk.
+        if let recent = recentTracks.first(where: { $0.path == url.path }) {
+            openRecent(recent)
+            return
+        }
         startImport { [weak self] in
             guard let self else { return }
             let track = try await localImporter.makeTrack(from: url)
@@ -225,6 +233,22 @@ final class WorkspaceViewModel {
         guard let track else { return }
         let url = track.originalURL ?? track.workingURL
         NSWorkspace.shared.activateFileViewerSelecting([url])
+    }
+
+    /// Standard open panel pointed at the imports folder, so downloads stay
+    /// reachable even after Recents is cleared.
+    func openFromImports() {
+        do {
+            let panel = NSOpenPanel()
+            panel.directoryURL = try WorkingDirectory().importsURL()
+            panel.allowedContentTypes = [.audio]
+            panel.allowsMultipleSelection = false
+            if panel.runModal() == .OK, let url = panel.url {
+                importLocalFile(at: url)
+            }
+        } catch {
+            presentAny(error)
+        }
     }
 
     func skipBackward() { audio.skip(by: -5) }
@@ -457,7 +481,6 @@ final class WorkspaceViewModel {
 
     private func restore() {
         let state = store.load()
-        youTubeURLString = state.youTubeURLString
         trackSettings = state.trackSettings ?? [:]
         // Keep only recents whose working file still exists.
         recentTracks = (state.recentTracks ?? []).filter {
@@ -513,7 +536,6 @@ final class WorkspaceViewModel {
             displayName: track?.displayName,
             source: track?.source,
             format: track?.format,
-            youTubeURLString: youTubeURLString,
             recentTracks: recentTracks,
             trackSettings: trackSettings
         )

@@ -17,15 +17,18 @@ nonisolated struct AudioConverter {
     }
 
     /// Decodes `input` to 16-bit PCM WAV at `output`, dropping any video track.
-    func convertToWAV(input: URL, output: URL) async throws {
+    /// `title`, when given, is embedded in the WAV's INFO chunk so the track
+    /// stays identifiable independent of its (sanitized, truncated) filename.
+    func convertToWAV(input: URL, output: URL, title: String? = nil) async throws {
         let ffmpeg = try binaries.ffmpeg()
-        let arguments = [
+        var arguments = [
             "-y",                 // overwrite
             "-i", input.path,
             "-vn",                // no video
-            "-acodec", "pcm_s16le",
-            output.path
+            "-acodec", "pcm_s16le"
         ]
+        if let title { arguments += ["-metadata", "title=\(title)"] }
+        arguments.append(output.path)
 
         let result = try await runner.run(executable: ffmpeg, arguments: arguments)
         guard result.didSucceed else {
