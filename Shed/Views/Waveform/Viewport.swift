@@ -30,4 +30,18 @@ struct Viewport: Equatable {
         let visible = visibleDuration(total: total)
         start = min(max(0, time - visible / 2), max(0, total - visible))
     }
+
+    /// Shifts the window by a scroll delta, where `width` is the view's width
+    /// in points. Content follows the fingers, matching NSScrollView's
+    /// direction. Returns whether the window actually moved.
+    @discardableResult
+    mutating func pan(byPixels deltaX: Double, width: Double, total: TimeInterval) -> Bool {
+        let visible = visibleDuration(total: total)
+        guard width > 0, visible > 0, visible < total else { return false }
+        let current = clampedStart(total: total)
+        let newStart = min(max(0, current - deltaX / width * visible), max(0, total - visible))
+        guard newStart != current else { return false }
+        start = newStart
+        return true
+    }
 }
