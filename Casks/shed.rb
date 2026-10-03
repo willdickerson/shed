@@ -1,7 +1,7 @@
 cask "shed" do
-  version "1.0.0-beta.8"
-  # shasum -a 256 Shed-1.0.0-beta.8.dmg
-  sha256 "164564393477d90c1c0a070e87ea2446d798a0657cb5b9ef00390e3e4824339c"
+  version "1.0.0-beta.9"
+  # shasum -a 256 Shed-1.0.0-beta.9.dmg
+  sha256 "6c942cf89232172b1d5c8da0846e283626e2f15d754e5aea95adde7582601da2"
 
   url "https://github.com/willdickerson/shed/releases/download/v#{version}/Shed-#{version}.dmg"
   name "Shed"
