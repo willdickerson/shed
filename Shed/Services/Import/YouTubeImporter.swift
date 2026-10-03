@@ -3,7 +3,8 @@
 //  Shed
 //
 //  Downloads best-available audio with yt-dlp, then converts it to WAV with
-//  ffmpeg. Reports coarse progress through a callback.
+//  ffmpeg. Reports coarse progress through a callback. A failed download is
+//  retried once after updating yt-dlp, since a stale yt-dlp is the usual cause.
 //
 
 import Foundation
@@ -13,17 +14,20 @@ nonisolated struct YouTubeImporter {
     private let runner: ProcessRunner
     private let workingDirectory: WorkingDirectory
     private let converter: AudioConverter
+    private let updater: YtDlpUpdater
 
     init(
         binaries: BinaryLocator = BinaryLocator(),
         runner: ProcessRunner = ProcessRunner(),
         workingDirectory: WorkingDirectory = WorkingDirectory(),
-        converter: AudioConverter = AudioConverter()
+        converter: AudioConverter = AudioConverter(),
+        updater: YtDlpUpdater = .shared
     ) {
         self.binaries = binaries
         self.runner = runner
         self.workingDirectory = workingDirectory
         self.converter = converter
+        self.updater = updater
     }
 
     /// Validates the URL, downloads audio, converts to WAV, and returns a Track.
@@ -34,8 +38,11 @@ nonisolated struct YouTubeImporter {
     ) async throws -> Track {
         guard let url = Self.validate(urlString) else { throw ShedError.invalidURL }
 
-        let ytDlp = try binaries.ytDlp()
+        _ = try binaries.ytDlp()
         _ = try binaries.ffmpeg() // fail early if ffmpeg is missing too
+
+        // Usually a no-op; updates at most once a day.
+        await updater.refresh { onStatus(.updatingDownloader) }
 
         // yt-dlp needs a JavaScript runtime to solve YouTube's player
         // challenges; it looks deno up via PATH, which for a GUI app doesn't
@@ -47,7 +54,6 @@ nonisolated struct YouTubeImporter {
         let template = try workingDirectory.makeDestination(token: "\(token)__%(title)s", ext: "%(ext)s")
 
         // MARK: Download
-        onStatus(.downloading(progress: nil))
         var downloadArgs = [
             "--no-playlist",
             "--newline",
@@ -58,9 +64,10 @@ nonisolated struct YouTubeImporter {
             downloadArgs += ["--js-runtimes", "deno:\(deno.path)"]
         }
         downloadArgs.append(url.absoluteString)
-        let download = try await runner.run(executable: ytDlp, arguments: downloadArgs) { line in
-            if let progress = Self.parseProgress(line) {
-                onStatus(.downloading(progress: progress))
+        var download = try await self.download(arguments: downloadArgs, onStatus: onStatus)
+        if !download.didSucceed {
+            if await updater.refresh(force: true, willUpdate: { onStatus(.updatingDownloader) }) {
+                download = try await self.download(arguments: downloadArgs, onStatus: onStatus)
             }
         }
         guard download.didSucceed else {
@@ -82,6 +89,18 @@ nonisolated struct YouTubeImporter {
     }
 
     // MARK: - Helpers
+
+    private nonisolated func download(
+        arguments: [String],
+        onStatus: @escaping @Sendable (ImportStatus) -> Void
+    ) async throws -> ProcessResult {
+        onStatus(.downloading(progress: nil))
+        return try await runner.run(executable: try binaries.ytDlp(), arguments: arguments) { line in
+            if let progress = Self.parseProgress(line) {
+                onStatus(.downloading(progress: progress))
+            }
+        }
+    }
 
     private nonisolated func locateDownloadedFile(token: String) throws -> URL {
         let dir = try workingDirectory.importsURL()

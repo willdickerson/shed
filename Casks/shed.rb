@@ -9,7 +9,7 @@ cask "shed" do
   homepage "https://github.com/willdickerson/shed"
 
   # Match (or lower) the project's MACOSX_DEPLOYMENT_TARGET.
-  depends_on macos: :sonoma
+  depends_on macos: :ventura
 
   app "Shed.app"
 

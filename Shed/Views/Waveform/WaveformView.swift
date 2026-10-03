@@ -11,7 +11,8 @@ import AppKit
 import SwiftUI
 
 struct WaveformView: View {
-    @Bindable var viewModel: WorkspaceViewModel
+    @ObservedObject var viewModel: WorkspaceViewModel
+    @ObservedObject var clock: PlaybackClock
     let waveform: WaveformData
     @Binding var viewport: Viewport
     let onInteract: () -> Void
@@ -70,10 +71,10 @@ struct WaveformView: View {
                             visibleStart: visibleStart, visibleDuration: visibleDuration)
             }
             .animation(.easeInOut(duration: 0.2), value: viewModel.loopRegion)
-            .onChange(of: viewport.zoom) { _, _ in
-                viewport.center(on: viewModel.currentTime, total: total)
+            .onValueChange(of: viewport.zoom) { _ in
+                viewport.center(on: clock.currentTime, total: total)
             }
-            .onChange(of: viewModel.currentTime) { _, time in
+            .onValueChange(of: clock.currentTime) { time in
                 followPlayhead(time, total: total)
             }
         }
@@ -178,7 +179,7 @@ struct WaveformView: View {
 
     @ViewBuilder
     private func playhead(size: CGSize, visibleStart: TimeInterval, visibleDuration: TimeInterval) -> some View {
-        let px = x(for: viewModel.currentTime, width: size.width,
+        let px = x(for: clock.currentTime, width: size.width,
                    visibleStart: visibleStart, visibleDuration: visibleDuration)
         if px >= 0, px <= size.width {
             let bodyHeight = size.height - topInset
@@ -187,11 +188,11 @@ struct WaveformView: View {
                     .fill(Color.red)
                     .frame(width: 2, height: bodyHeight)
                     .position(x: px, y: topInset + bodyHeight / 2)
-                TimeTag(text: TimeFormatting.precise(viewModel.currentTime), color: Self.playheadTagColor)
+                TimeTag(text: TimeFormatting.precise(clock.currentTime), color: Self.playheadTagColor)
                     .position(x: px, y: topInset / 2)
             }
             // Slight overlap between samples keeps motion continuous.
-            .animation(.linear(duration: 0.05), value: viewModel.currentTime)
+            .animation(.linear(duration: 0.05), value: clock.currentTime)
         }
     }
 
@@ -249,8 +250,8 @@ struct WaveformView: View {
         onInteract()
         let visibleStart = viewport.start
         let visibleDuration = viewport.visibleDuration(total: total)
-        followSuspended = viewModel.currentTime < visibleStart
-            || viewModel.currentTime > visibleStart + visibleDuration
+        followSuspended = clock.currentTime < visibleStart
+            || clock.currentTime > visibleStart + visibleDuration
     }
 
     // MARK: - Gesture

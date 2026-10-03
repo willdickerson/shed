@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct InspectorView: View {
-    @Bindable var viewModel: WorkspaceViewModel
+    @ObservedObject var viewModel: WorkspaceViewModel
 
     var body: some View {
         ScrollView {
@@ -100,8 +100,7 @@ struct InspectorView: View {
 
         case .analyzing:
             HStack(spacing: 8) {
-                Image(systemName: "waveform")
-                    .symbolEffect(.variableColor.iterative)
+                AnalyzingIcon()
                 Text("Estimating offset…")
             }
             .font(.callout)
@@ -278,6 +277,19 @@ struct InspectorSection<Content: View>: View {
                 RoundedRectangle(cornerRadius: 10)
                     .strokeBorder(Color(nsColor: .separatorColor).opacity(0.5), lineWidth: 0.5)
             )
+        }
+    }
+}
+
+/// Animated waveform glyph shown while tuning analysis runs. Ventura has no
+/// symbol effects, so it shows the glyph without animation there.
+private struct AnalyzingIcon: View {
+    var body: some View {
+        if #available(macOS 14, *) {
+            Image(systemName: "waveform")
+                .symbolEffect(.variableColor.iterative)
+        } else {
+            Image(systemName: "waveform")
         }
     }
 }

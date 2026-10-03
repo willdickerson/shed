@@ -14,8 +14,8 @@ struct ImportMenu: View {
 
     var body: some View {
         Menu {
-            Button("Open Audio File…", systemImage: "folder", action: onOpenFile)
-            Button("Import from YouTube…", systemImage: "play.rectangle", action: onYouTube)
+            Button(action: onOpenFile) { Label("Open Audio File…", systemImage: "folder") }
+            Button(action: onYouTube) { Label("Import from YouTube…", systemImage: "play.rectangle") }
         } label: {
             Label("Import", systemImage: "folder.badge.plus")
         }

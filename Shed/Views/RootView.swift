@@ -11,7 +11,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct RootView: View {
-    @Bindable var viewModel: WorkspaceViewModel
+    @ObservedObject var viewModel: WorkspaceViewModel
 
     @State private var viewport = Viewport()
     @FocusState private var keyboardFocused: Bool
@@ -29,15 +29,13 @@ struct RootView: View {
                 )
             }
         }
-        .focusable()
-        .focused($keyboardFocused)
-        .focusEffectDisabled()
-        .onAppear { keyboardFocused = true }
         .modifier(KeyboardShortcuts(
             viewModel: viewModel,
+            focus: $keyboardFocused,
             onZoomIn: { adjustZoom(1.5) },
             onZoomOut: { adjustZoom(1 / 1.5) }
         ))
+        .onAppear { keyboardFocused = true }
         .dropDestination(for: URL.self) { urls, _ in
             guard let url = urls.first, url.isFileURL else { return false }
             viewModel.importLocalFile(at: url)
@@ -56,7 +54,7 @@ struct RootView: View {
         .sheet(isPresented: $viewModel.isShowingYouTubeSheet) {
             YouTubeImportSheet(viewModel: viewModel)
         }
-        .onChange(of: viewModel.track?.id) { _, _ in
+        .onValueChange(of: viewModel.track?.id) { _ in
             viewport = Viewport()
         }
         .alert(

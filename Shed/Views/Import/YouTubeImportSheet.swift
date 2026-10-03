@@ -6,7 +6,7 @@
 import SwiftUI
 
 struct YouTubeImportSheet: View {
-    @Bindable var viewModel: WorkspaceViewModel
+    @ObservedObject var viewModel: WorkspaceViewModel
     @Environment(\.dismiss) private var dismiss
     @FocusState private var fieldFocused: Bool
 

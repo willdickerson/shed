@@ -10,6 +10,7 @@ import Foundation
 nonisolated enum ImportStatus: Equatable, Sendable {
     case idle
     case waiting
+    case updatingDownloader
     case downloading(progress: Double?)
     case converting
     case loadingWaveform
@@ -20,6 +21,7 @@ nonisolated enum ImportStatus: Equatable, Sendable {
         switch self {
         case .idle: return ""
         case .waiting: return "Waiting…"
+        case .updatingDownloader: return "Updating downloader…"
         case let .downloading(progress):
             if let progress { return "Downloading audio… \(Int(progress * 100))%" }
             return "Downloading audio…"
@@ -32,7 +34,7 @@ nonisolated enum ImportStatus: Equatable, Sendable {
 
     var isBusy: Bool {
         switch self {
-        case .waiting, .downloading, .converting, .loadingWaveform: return true
+        case .waiting, .updatingDownloader, .downloading, .converting, .loadingWaveform: return true
         default: return false
         }
     }

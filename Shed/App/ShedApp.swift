@@ -8,7 +8,7 @@ import SwiftUI
 @main
 struct ShedApp: App {
     @NSApplicationDelegateAdaptor(MenuIconStripper.self) private var appDelegate
-    @State private var viewModel = WorkspaceViewModel()
+    @StateObject private var viewModel = WorkspaceViewModel()
 
     var body: some Scene {
         // A singleton Window (not WindowGroup): Shed is a single-session app, so

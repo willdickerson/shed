@@ -35,6 +35,12 @@ At runtime `BinaryLocator` searches in order:
 **bundled → `/opt/homebrew/bin` → `/usr/local/bin` → `PATH`**, and only errors
 if nothing usable is found.
 
+The bundled yt-dlp is only a seed. YouTube breaks old yt-dlp releases within
+weeks (downloads fail with HTTP 403), so on launch Shed copies it to
+`~/Library/Application Support/Shed/bin/` and runs `yt-dlp --update` there at
+most once a day; a failed download forces an update and retries once. That
+managed copy is what imports use.
+
 ## 2. Build a universal release (arm64 + Intel)
 
 Use **Product ▸ Archive** in Xcode, or a **generic** destination — both produce
@@ -49,8 +55,8 @@ xcodebuild -project Shed.xcodeproj -scheme Shed -configuration Release \
 > Don't build with a concrete `-destination 'platform=macOS'` (or a Debug
 > build) for distribution — those compile only the current Mac's architecture.
 > Verify with: `lipo -archs Shed.app/Contents/MacOS/Shed` → should list both.
-> The bundled helpers are already universal. Intel testers need macOS 15+
-> (Sequoia still supports 2018–2020 Intel Macs).
+> The bundled helpers are already universal. Shed targets macOS 13 (Ventura);
+> `fetch-vendor-binaries.sh` fails if a downloaded helper needs anything newer.
 
 > The bundled ffmpeg is large (~125 MB universal), so the app is ~170 MB. To
 > slim it, ship an arm64-only ffmpeg (edit `fetch-vendor-binaries.sh` to skip the

@@ -8,14 +8,14 @@
 import SwiftUI
 
 struct WaveformPane: View {
-    @Bindable var viewModel: WorkspaceViewModel
+    @ObservedObject var viewModel: WorkspaceViewModel
     @Binding var viewport: Viewport
     let onInteract: () -> Void
 
     var body: some View {
         VStack(spacing: 12) {
             if let waveform = viewModel.waveform {
-                WaveformView(viewModel: viewModel, waveform: waveform,
+                WaveformView(viewModel: viewModel, clock: viewModel.audio.clock, waveform: waveform,
                              viewport: $viewport, onInteract: onInteract)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 

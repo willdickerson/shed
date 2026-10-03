@@ -52,6 +52,16 @@ lipo -create "$TMP/deno-intel/deno" "$TMP/deno-arm/deno" -output "$DEST/deno"
 
 chmod +x "$DEST/yt-dlp" "$DEST/ffmpeg" "$DEST/deno"
 
+# Every helper must run on the app's minimum macOS.
+TARGET="$(sed -nE 's/.*MACOSX_DEPLOYMENT_TARGET = ([0-9.]+);/\1/p' Shed.xcodeproj/project.pbxproj | sort -uV | head -1)"
+for b in yt-dlp ffmpeg deno; do
+  MINOS="$(otool -l "$DEST/$b" | awk '/LC_BUILD_VERSION/{f=1} f&&/minos/{print $2; f=0} /LC_VERSION_MIN_MACOSX/{g=1} g&&/ version/{print $2; g=0}' | sort -V | tail -1)"
+  if [ -n "$MINOS" ] && [ "$(printf '%s\n%s\n' "$MINOS" "$TARGET" | sort -V | tail -1)" != "$TARGET" ]; then
+    echo "error: $b requires macOS $MINOS but Shed targets $TARGET" >&2
+    exit 1
+  fi
+done
+
 echo
 echo "Done. Vendored binaries:"
 for b in yt-dlp ffmpeg deno; do

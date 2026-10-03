@@ -9,7 +9,7 @@
 import SwiftUI
 
 struct TransportBar: View {
-    @Bindable var viewModel: WorkspaceViewModel
+    @ObservedObject var viewModel: WorkspaceViewModel
     @Binding var viewport: Viewport
 
     var body: some View {
@@ -24,7 +24,7 @@ struct TransportBar: View {
                 playButton
                 seekButton("goforward.5", help: "Forward 5 seconds (→)", action: viewModel.skipForward)
 
-                timeReadout
+                TimeReadout(clock: viewModel.audio.clock, duration: viewModel.duration)
                     .padding(.leading, 6)
 
                 speedControl
@@ -65,19 +65,6 @@ struct TransportBar: View {
         }
         .buttonStyle(HoverButtonStyle())
         .help(help)
-    }
-
-    private var timeReadout: some View {
-        HStack(spacing: 4) {
-            Text(TimeFormatting.clock(viewModel.currentTime))
-                .foregroundStyle(.primary)
-            Text("/")
-                .foregroundStyle(.tertiary)
-            Text(TimeFormatting.clock(viewModel.duration))
-                .foregroundStyle(.secondary)
-        }
-        .font(.system(.callout, design: .rounded))
-        .monospacedDigit()
     }
 
     private var speedControl: some View {
@@ -132,5 +119,25 @@ struct TransportBar: View {
         }
         .font(.system(size: 11))
         .disabled(!viewModel.hasTrack)
+    }
+}
+
+/// Elapsed / total time. Observes the playback clock directly so the rest of
+/// the transport doesn't redraw with every playhead tick.
+private struct TimeReadout: View {
+    @ObservedObject var clock: PlaybackClock
+    let duration: TimeInterval
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Text(TimeFormatting.clock(clock.currentTime))
+                .foregroundStyle(.primary)
+            Text("/")
+                .foregroundStyle(.tertiary)
+            Text(TimeFormatting.clock(duration))
+                .foregroundStyle(.secondary)
+        }
+        .font(.system(.callout, design: .rounded))
+        .monospacedDigit()
     }
 }

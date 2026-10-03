@@ -4,7 +4,8 @@
 //
 //  Resolves the external tools Shed depends on. Beta builds bundle universal
 //  copies inside the app, so it checks those first and only falls back to a
-//  Homebrew / PATH install. Fails loudly only when nothing usable is found.
+//  Homebrew / PATH install. yt-dlp additionally prefers Shed's self-updating
+//  copy in Application Support. Fails loudly only when nothing usable is found.
 //
 
 import Foundation
@@ -17,14 +18,29 @@ nonisolated struct BinaryLocator {
         self.extraDirectories = extraDirectories
     }
 
-    func ytDlp() throws -> URL { try resolve(name: "yt-dlp") }
+    func ytDlp() throws -> URL { try resolve(name: "yt-dlp", preferring: Self.managedDirectory) }
     func ffmpeg() throws -> URL { try resolve(name: "ffmpeg") }
     func deno() throws -> URL { try resolve(name: "deno") }
 
     // MARK: - Resolution
 
-    private func resolve(name: String) throws -> URL {
-        for path in candidatePaths(for: name)
+    /// Where Shed keeps tools it updates itself (~/Library/Application Support/Shed/bin).
+    static var managedDirectory: URL? {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
+            .appendingPathComponent("Shed", isDirectory: true)
+            .appendingPathComponent("bin", isDirectory: true)
+    }
+
+    /// The copy shipped inside the app, if present.
+    func bundled(_ name: String) -> URL? {
+        guard let path = bundledPath(for: name),
+              FileManager.default.isExecutableFile(atPath: path) else { return nil }
+        return URL(fileURLWithPath: path)
+    }
+
+    private func resolve(name: String, preferring preferred: URL? = nil) throws -> URL {
+        let first = preferred.map { [$0.appendingPathComponent(name).path] } ?? []
+        for path in first + candidatePaths(for: name)
         where FileManager.default.isExecutableFile(atPath: path) {
             return URL(fileURLWithPath: path)
         }

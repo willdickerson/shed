@@ -15,16 +15,27 @@
 //
 
 import AVFoundation
-import Observation
+import Combine
 
-@Observable
-final class AudioEngineController {
+/// The playhead, published on its own so only the views that draw it redraw
+/// at display rate.
+final class PlaybackClock: ObservableObject {
+    @Published fileprivate(set) var currentTime: TimeInterval = 0
+}
+
+final class AudioEngineController: ObservableObject {
 
     // MARK: Observable state
 
-    private(set) var isPlaying = false
-    private(set) var currentTime: TimeInterval = 0
-    private(set) var duration: TimeInterval = 0
+    @Published private(set) var isPlaying = false
+    @Published private(set) var duration: TimeInterval = 0
+
+    let clock = PlaybackClock()
+
+    private(set) var currentTime: TimeInterval {
+        get { clock.currentTime }
+        set { clock.currentTime = newValue }
+    }
 
     // MARK: Engine graph
 

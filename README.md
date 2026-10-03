@@ -29,6 +29,6 @@
 Everything runs on your Mac — no account, no servers. yt-dlp and ffmpeg ship
 inside the app.
 
-Requires macOS 14 (Sonoma) or later · Apple Silicon &amp; Intel.
+Requires macOS 13 (Ventura) or later · Apple Silicon &amp; Intel.
 
 Install steps: [BETA.md](BETA.md) · Building &amp; releasing: [PACKAGING.md](PACKAGING.md)

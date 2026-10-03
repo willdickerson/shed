@@ -8,13 +8,12 @@
 //
 
 import AppKit
+import Combine
 import Foundation
-import Observation
 import UniformTypeIdentifiers
 
-@Observable
 @MainActor
-final class WorkspaceViewModel {
+final class WorkspaceViewModel: ObservableObject {
 
     /// Selectable playback speeds (pitch preserved).
     static let speedOptions: [Double] = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
@@ -30,35 +29,36 @@ final class WorkspaceViewModel {
 
     // MARK: Track / waveform
 
-    private(set) var track: Track?
-    private(set) var waveform: WaveformData?
-    var importStatus: ImportStatus = .idle
+    @Published private(set) var track: Track?
+    @Published private(set) var waveform: WaveformData?
+    @Published var importStatus: ImportStatus = .idle
 
     // MARK: User-editable state
 
-    var youTubeURLString: String = ""
-    private(set) var speed: Double = 1.0
-    private(set) var semitones: Int = 0
-    private(set) var cents: Int = 0
-    private(set) var volume: Double = 1.0
-    private(set) var loopRegion: LoopRegion?
-    private(set) var loopEnabled: Bool = false
-    private(set) var tuningState: TuningAnalysisState = .idle
+    @Published var youTubeURLString: String = ""
+    @Published private(set) var speed: Double = 1.0
+    @Published private(set) var semitones: Int = 0
+    @Published private(set) var cents: Int = 0
+    @Published private(set) var volume: Double = 1.0
+    @Published private(set) var loopRegion: LoopRegion?
+    @Published private(set) var loopEnabled: Bool = false
+    @Published private(set) var tuningState: TuningAnalysisState = .idle
 
     // MARK: Recents
 
-    private(set) var recentTracks: [RecentTrack] = []
+    @Published private(set) var recentTracks: [RecentTrack] = []
 
     // MARK: Presentation (driven by both the toolbar and the File menu)
 
-    var isShowingFileImporter = false
-    var isShowingYouTubeSheet = false
+    @Published var isShowingFileImporter = false
+    @Published var isShowingYouTubeSheet = false
 
     // MARK: Error presentation
 
-    var activeError: PresentedError?
+    @Published var activeError: PresentedError?
 
     private var importTask: Task<Void, Never>?
+    private var audioChanges: AnyCancellable?
     private var tuningTask: Task<Void, Never>?
 
     /// Per-song speed/pitch/loop, keyed by working-file path.
@@ -80,7 +80,12 @@ final class WorkspaceViewModel {
         self.waveformGenerator = waveformGenerator
         self.tuningAnalyzer = tuningAnalyzer
         self.store = store
+        // Relay play/pause state; the playhead is observed via `audio.clock`.
+        audioChanges = self.audio.objectWillChange.sink { [weak self] _ in
+            self?.objectWillChange.send()
+        }
         restore()
+        Task { await YtDlpUpdater.shared.refresh() }
     }
 
     // MARK: - Derived state
